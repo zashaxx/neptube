@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { TRPCProvider } from "@/trpc/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { BannedCheck } from "@/components/banned-check";
 
 export default function RootLayout({
   children,
@@ -16,9 +17,11 @@ export default function RootLayout({
         <ClerkProvider>
           <TRPCProvider>
             <SidebarProvider>
-              <div className="flex min-h-screen">
-                <main className="flex-1">{children}</main>
-              </div>
+              <BannedCheck>
+                <div className="flex min-h-screen">
+                  <main className="flex-1">{children}</main>
+                </div>
+              </BannedCheck>
             </SidebarProvider>
           </TRPCProvider>
         </ClerkProvider>

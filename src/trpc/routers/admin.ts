@@ -114,15 +114,18 @@ export const adminRouter = createTRPCRouter({
       return updated[0];
     }),
 
-  // Ban user
+  // Ban user (accepts either UUID or Clerk ID)
   banUser: adminProcedure
     .input(
       z.object({
-        userId: z.string().uuid(),
+        userId: z.string(), // Can be UUID or Clerk ID
         reason: z.string().min(1).max(500),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Check if it's a UUID or Clerk ID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.userId);
+      
       const updated = await ctx.db
         .update(users)
         .set({
@@ -130,16 +133,19 @@ export const adminRouter = createTRPCRouter({
           banReason: input.reason,
           updatedAt: new Date(),
         })
-        .where(eq(users.id, input.userId))
+        .where(isUUID ? eq(users.id, input.userId) : eq(users.clerkId, input.userId))
         .returning();
 
       return updated[0];
     }),
 
-  // Unban user
+  // Unban user (accepts either UUID or Clerk ID)
   unbanUser: adminProcedure
-    .input(z.object({ userId: z.string().uuid() }))
+    .input(z.object({ userId: z.string() })) // Can be UUID or Clerk ID
     .mutation(async ({ ctx, input }) => {
+      // Check if it's a UUID or Clerk ID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.userId);
+      
       const updated = await ctx.db
         .update(users)
         .set({
@@ -147,7 +153,7 @@ export const adminRouter = createTRPCRouter({
           banReason: null,
           updatedAt: new Date(),
         })
-        .where(eq(users.id, input.userId))
+        .where(isUUID ? eq(users.id, input.userId) : eq(users.clerkId, input.userId))
         .returning();
 
       return updated[0];

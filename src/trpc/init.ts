@@ -40,12 +40,20 @@ export const createTRPCRouter = t.router;
 export const createCallerFactory = t.createCallerFactory;
 export const baseProcedure = t.procedure;
 
-// Protected procedure - requires authentication
+// Protected procedure - requires authentication and checks if banned
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.clerkId || !ctx.user) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "You must be logged in to perform this action",
+    });
+  }
+
+  // Check if user is banned
+  if (ctx.user.isBanned) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Your account has been suspended. Please contact support for more information.",
     });
   }
 
