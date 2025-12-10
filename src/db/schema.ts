@@ -48,6 +48,7 @@ export const videos = pgTable("videos", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
   description: text("description"),
+  category: text("category"),
   thumbnailURL: text("thumbnail_url"),
   videoURL: text("video_url"),
   visibility: videoVisibilityEnum("visibility").default("private").notNull(),

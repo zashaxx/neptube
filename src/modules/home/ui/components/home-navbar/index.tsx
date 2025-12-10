@@ -4,6 +4,8 @@ import Image from "next/image";
 
 import { SearchInput } from "./search-input";
 import { AuthButton } from "@/modules/auth/ui/components/auth-button";
+import { Button } from "@/components/ui/button";
+import { Video, Upload } from "lucide-react";
 
 
 export const HomeNavbar = () => {
@@ -25,6 +27,16 @@ export const HomeNavbar = () => {
                 <SearchInput/>
         </div>
         <div className="flex-shrink-0 items-center flex gap-4">
+              <Link href="/studio/upload">
+                <Button variant="ghost" size="icon" title="Upload video">
+                  <Upload className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/studio">
+                <Button variant="ghost" size="icon" title="Creator Studio">
+                  <Video className="h-5 w-5" />
+                </Button>
+              </Link>
               <AuthButton/>
         </div>
       </div>

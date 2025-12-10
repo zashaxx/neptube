@@ -6,6 +6,14 @@ import { TRPCProvider } from "@/trpc/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { BannedCheck } from "@/components/banned-check";
 
+export const metadata: Metadata = {
+  title: "NepTube - Share Your Videos with the World",
+  description: "NepTube is a video sharing platform where you can upload, watch, and share videos with the world.",
+  icons: {
+    icon: "/favicon.ico",
+  },
+};
+
 export default function RootLayout({
   children,
 }: {

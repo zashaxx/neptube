@@ -55,6 +55,7 @@ export const videosRouter = createTRPCRouter({
           id: videos.id,
           title: videos.title,
           description: videos.description,
+          category: videos.category,
           thumbnailURL: videos.thumbnailURL,
           videoURL: videos.videoURL,
           visibility: videos.visibility,
@@ -122,9 +123,10 @@ export const videosRouter = createTRPCRouter({
       z.object({
         title: z.string().min(1).max(100),
         description: z.string().max(5000).optional(),
+        category: z.string().max(50).optional(),
         thumbnailURL: z.string().url().optional(),
         videoURL: z.string().url().optional(),
-        visibility: z.enum(["public", "private", "unlisted"]).default("private"),
+        visibility: z.enum(["public", "private", "unlisted"]).default("public"),
         duration: z.number().int().min(0).optional(),
       })
     )
@@ -134,6 +136,7 @@ export const videosRouter = createTRPCRouter({
         .values({
           ...input,
           userId: ctx.user.id,
+          status: "published", // Auto-publish for demo
         })
         .returning();
 
@@ -147,6 +150,7 @@ export const videosRouter = createTRPCRouter({
         id: z.string().uuid(),
         title: z.string().min(1).max(100).optional(),
         description: z.string().max(5000).optional(),
+        category: z.string().max(50).optional(),
         thumbnailURL: z.string().url().optional(),
         videoURL: z.string().url().optional(),
         visibility: z.enum(["public", "private", "unlisted"]).optional(),

@@ -1,4 +1,37 @@
-# NepTube
+# NepTube 🎬
+
+A modern video sharing platform built with Next.js, featuring video uploads, AI thumbnail generation, and an admin dashboard.
+
+## Features
+
+- 📹 **Video Upload** - Upload and share videos (up to 512MB)
+- 🎨 **AI Thumbnail Generation** - Generate eye-catching thumbnails using AI
+- 👤 **User Authentication** - Secure login with Clerk
+- 🛡️ **Admin Dashboard** - Manage users, videos, and platform settings
+- 🚫 **Moderation** - Ban users and remove inappropriate content
+- 📱 **Responsive Design** - Works on all devices
+
+## Tech Stack
+
+- **Framework**: Next.js 16 with Turbopack
+- **Authentication**: Clerk
+- **Database**: Neon PostgreSQL with Drizzle ORM
+- **API**: tRPC for type-safe APIs
+- **File Storage**: UploadThing
+- **AI**: Pollinations AI for thumbnail generation
+- **Styling**: Tailwind CSS + shadcn/ui
+
+## Getting Started
+
+```bash
+# Install dependencies
+bun install
+
+# Run development server
+bun run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 A video sharing platform built with Next.js 16, tRPC, Clerk Authentication, and Drizzle ORM.
 
