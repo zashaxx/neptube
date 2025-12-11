@@ -106,11 +106,26 @@ export const subscriptions = pgTable("subscriptions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Watch History table
+export const watchHistory = pgTable("watch_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  videoId: uuid("video_id")
+    .notNull()
+    .references(() => videos.id, { onDelete: "cascade" }),
+  watchedAt: timestamp("watched_at").defaultNow().notNull(),
+  // Track last watched position for resume feature (optional)
+  lastPosition: integer("last_position").default(0),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   videos: many(videos),
   comments: many(comments),
   videoLikes: many(videoLikes),
+  watchHistory: many(watchHistory),
   subscriptions: many(subscriptions, { relationName: "subscriber" }),
   subscribers: many(subscriptions, { relationName: "channel" }),
 }));
@@ -122,6 +137,7 @@ export const videosRelations = relations(videos, ({ one, many }) => ({
   }),
   comments: many(comments),
   likes: many(videoLikes),
+  watchHistory: many(watchHistory),
 }));
 
 export const commentsRelations = relations(comments, ({ one, many }) => ({
@@ -162,5 +178,16 @@ export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
     fields: [subscriptions.channelId],
     references: [users.id],
     relationName: "channel",
+  }),
+}));
+
+export const watchHistoryRelations = relations(watchHistory, ({ one }) => ({
+  user: one(users, {
+    fields: [watchHistory.userId],
+    references: [users.id],
+  }),
+  video: one(videos, {
+    fields: [watchHistory.videoId],
+    references: [videos.id],
   }),
 }));

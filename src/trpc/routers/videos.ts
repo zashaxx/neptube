@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { eq, desc, and, sql, ilike, or } from "drizzle-orm";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "../init";
-import { videos, users, videoLikes } from "@/db/schema";
+import { videos, users, videoLikes, watchHistory } from "@/db/schema";
 
 export const videosRouter = createTRPCRouter({
   // Get all public videos (feed) with optional search
@@ -316,5 +316,140 @@ export const videosRouter = createTRPCRouter({
         .limit(1);
 
       return like[0] || null;
+    }),
+
+  // Add video to watch history
+  addToWatchHistory: protectedProcedure
+    .input(
+      z.object({
+        videoId: z.string().uuid(),
+        lastPosition: z.number().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if already in history
+      const existing = await ctx.db
+        .select()
+        .from(watchHistory)
+        .where(
+          and(
+            eq(watchHistory.videoId, input.videoId),
+            eq(watchHistory.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
+
+      if (existing.length > 0) {
+        // Update existing entry to move it to the top
+        await ctx.db
+          .update(watchHistory)
+          .set({
+            watchedAt: new Date(),
+            lastPosition: input.lastPosition || 0,
+          })
+          .where(eq(watchHistory.id, existing[0].id));
+      } else {
+        // Create new entry
+        await ctx.db.insert(watchHistory).values({
+          videoId: input.videoId,
+          userId: ctx.user.id,
+          lastPosition: input.lastPosition || 0,
+        });
+      }
+
+      return { success: true };
+    }),
+
+  // Get user's watch history
+  getWatchHistory: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).default(20),
+        cursor: z.string().uuid().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const items = await ctx.db
+        .select({
+          id: videos.id,
+          title: videos.title,
+          description: videos.description,
+          thumbnailURL: videos.thumbnailURL,
+          duration: videos.duration,
+          viewCount: videos.viewCount,
+          createdAt: videos.createdAt,
+          watchedAt: watchHistory.watchedAt,
+          user: {
+            id: users.id,
+            name: users.name,
+            imageURL: users.imageURL,
+          },
+        })
+        .from(watchHistory)
+        .innerJoin(videos, eq(watchHistory.videoId, videos.id))
+        .innerJoin(users, eq(videos.userId, users.id))
+        .where(eq(watchHistory.userId, ctx.user.id))
+        .orderBy(desc(watchHistory.watchedAt))
+        .limit(input.limit + 1);
+
+      let nextCursor: string | undefined = undefined;
+      if (items.length > input.limit) {
+        const nextItem = items.pop();
+        nextCursor = nextItem?.id;
+      }
+
+      return {
+        items,
+        nextCursor,
+      };
+    }),
+
+  // Get user's liked videos
+  getLikedVideos: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).default(20),
+        cursor: z.string().uuid().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const items = await ctx.db
+        .select({
+          id: videos.id,
+          title: videos.title,
+          description: videos.description,
+          thumbnailURL: videos.thumbnailURL,
+          duration: videos.duration,
+          viewCount: videos.viewCount,
+          createdAt: videos.createdAt,
+          likedAt: videoLikes.createdAt,
+          user: {
+            id: users.id,
+            name: users.name,
+            imageURL: users.imageURL,
+          },
+        })
+        .from(videoLikes)
+        .innerJoin(videos, eq(videoLikes.videoId, videos.id))
+        .innerJoin(users, eq(videos.userId, users.id))
+        .where(
+          and(
+            eq(videoLikes.userId, ctx.user.id),
+            eq(videoLikes.isLike, true)
+          )
+        )
+        .orderBy(desc(videoLikes.createdAt))
+        .limit(input.limit + 1);
+
+      let nextCursor: string | undefined = undefined;
+      if (items.length > input.limit) {
+        const nextItem = items.pop();
+        nextCursor = nextItem?.id;
+      }
+
+      return {
+        items,
+        nextCursor,
+      };
     }),
 });

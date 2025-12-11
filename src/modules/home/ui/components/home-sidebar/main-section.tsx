@@ -7,15 +7,15 @@ import {
     SidebarMenuButton , 
     SidebarMenuItem 
 } from "@/components/ui/sidebar";
-import { FlagIcon, HomeIcon, PlaySquareIcon } from "lucide-react"
+import { TrendingUp, Home, Video } from "lucide-react"
 import Link from "next/link";
 
 import { useAuth, useClerk } from "@clerk/nextjs";
 
 const items = [
-    { title:"Home", url:"/", icon:HomeIcon },
-    { title:"Subscriptions", url:"/feed/subscriptions", icon:PlaySquareIcon, auth:true },
-    { title:"Trending", url:"/feed/trending", icon:FlagIcon },
+    { title:"Home", url:"/", icon:Home },
+    { title:"Subscriptions", url:"/feed/subscriptions", icon:Video, auth:true },
+    { title:"Trending", url:"/feed/trending", icon:TrendingUp },
 ];
 
 export const MainSection = () => {
@@ -33,6 +33,7 @@ export const MainSection = () => {
                                 tooltip={item.title}
                                 asChild
                                 isActive={false}
+                                className="py-3"
                                 onClick={(e) => {
                                     if (!isLoaded) return;   // 🔥 prevents hydration glitch
 
@@ -42,9 +43,9 @@ export const MainSection = () => {
                                     }
                                 }}
                             >
-                                <Link href={item.url} className="flex items-center gap-4">
-                                    <item.icon />
-                                    <span className="text-sm">{item.title}</span>
+                                <Link href={item.url} className="flex items-center gap-3">
+                                    <item.icon className="h-5 w-5" />
+                                    <span className="text-base font-medium">{item.title}</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

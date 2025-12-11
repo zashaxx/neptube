@@ -10,7 +10,7 @@ const f = createUploadthing();
 // Helper function to get or create user in database
 async function getOrCreateUser(clerkId: string) {
   // Try to find existing user
-  let user = await db
+  const user = await db
     .select()
     .from(users)
     .where(eq(users.clerkId, clerkId))
@@ -107,6 +107,37 @@ export const ourFileRouter = {
     })
     .onUploadComplete(async ({ metadata, file }) => {
       console.log("Thumbnail upload complete for user:", metadata.userId);
+      return { 
+        uploadedBy: metadata.userId,
+        url: file.ufsUrl,
+      };
+    }),
+
+  // Image uploader - for profile pictures
+  imageUploader: f({
+    image: {
+      maxFileSize: "4MB",
+      maxFileCount: 1,
+    },
+  })
+    .middleware(async () => {
+      const { userId: clerkId } = await auth();
+
+      if (!clerkId) {
+        throw new UploadThingError("You must be logged in to upload images");
+      }
+
+      // Get or create user in database
+      const user = await getOrCreateUser(clerkId);
+
+      if (!user) {
+        throw new UploadThingError("Failed to get user");
+      }
+
+      return { userId: user.id };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log("Profile image upload complete for user:", metadata.userId);
       return { 
         uploadedBy: metadata.userId,
         url: file.ufsUrl,

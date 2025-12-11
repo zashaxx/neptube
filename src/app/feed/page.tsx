@@ -143,22 +143,23 @@ function FeedPage() {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 dark:bg-gray-950 min-h-screen w-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg sm:text-xl font-semibold dark:text-white">
-          {searchQuery ? `Search results for "${searchQuery}"` : ""}
-        </h1>
-      </div>
-
-      {/* Video Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10">
-          {[...Array(9)].map((_, i) => (
-            <VideoCardSkeleton key={i} />
-          ))}
+    <div className="py-6 dark:bg-gray-950 bg-white min-h-screen w-full">
+      <div className="max-w-[2000px] mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-lg sm:text-xl font-semibold dark:text-white">
+            {searchQuery ? `Search results for "${searchQuery}"` : ""}
+          </h1>
         </div>
-      ) : data?.items.length === 0 ? (
+
+        {/* Video Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10">
+            {[...Array(9)].map((_, i) => (
+              <VideoCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : data?.items.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
           <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
             {searchQuery ? (
@@ -191,6 +192,7 @@ function FeedPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
