@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { trpc } from "@/trpc/client";
 import Link from "next/link";
@@ -25,6 +25,23 @@ export default function VideoPage() {
   const params = useParams();
   const videoId = params.videoId as string;
   const { isSignedIn } = useAuth();
+  const [hasViewed, setHasViewed] = useState(false);
+
+  // Check if anonymous user has already viewed this video (in this session)
+  const getAnonymousViewedVideos = useCallback(() => {
+    const viewed = sessionStorage.getItem("viewedVideos");
+    return viewed ? new Set(JSON.parse(viewed)) : new Set<string>();
+  }, []);
+
+  const addAnonymousViewedVideo = useCallback((id: string) => {
+    const viewed = getAnonymousViewedVideos();
+    viewed.add(id);
+    sessionStorage.setItem("viewedVideos", JSON.stringify(Array.from(viewed)));
+  }, [getAnonymousViewedVideos]);
+
+  const isAnonymousViewed = useCallback((id: string) => {
+    return getAnonymousViewedVideos().has(id);
+  }, [getAnonymousViewedVideos]);
 
   const { data: video, isLoading, error } = trpc.videos.getById.useQuery(
     { id: videoId },
@@ -40,6 +57,8 @@ export default function VideoPage() {
   );
 
   const [localLikeStatus, setLocalLikeStatus] = useState<{ isLike: boolean } | null>(null);
+  const [localLikeCount, setLocalLikeCount] = useState<number>(0);
+  const [localDislikeCount, setLocalDislikeCount] = useState<number>(0);
 
   // Update local like status when data changes
   useEffect(() => {
@@ -48,17 +67,36 @@ export default function VideoPage() {
     }
   }, [likeStatus]);
 
-  // Increment view count and add to watch history when video loads
+  // Update local counts when video data changes
   useEffect(() => {
-    if (videoId) {
-      incrementViews.mutate({ id: videoId });
-      
-      if (isSignedIn) {
+    if (video) {
+      setLocalLikeCount(video.likeCount);
+      setLocalDislikeCount(video.dislikeCount);
+    }
+  }, [video]);
+
+  // Increment view count once when video loads
+  useEffect(() => {
+    if (!videoId) return;
+
+    // For signed-in users: check if they've viewed this video before
+    if (isSignedIn) {
+      if (!hasViewed) {
+        setHasViewed(true);
+        // Only increment if first time viewing
+        incrementViews.mutate({ id: videoId });
+        // Add to watch history (increments or updates)
         addToWatchHistory.mutate({ videoId });
       }
+    } else {
+      // For anonymous users: track views in sessionStorage
+      if (!isAnonymousViewed(videoId)) {
+        addAnonymousViewedVideo(videoId);
+        // For anonymous users, we don't actually increment the view count
+        // This is to prevent manipulation - only authenticated views count
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoId, isSignedIn]);
+  }, [videoId, hasViewed, isSignedIn, incrementViews, addToWatchHistory, isAnonymousViewed, addAnonymousViewedVideo]);
 
   const handleLike = async () => {
     if (!isSignedIn) {
@@ -67,12 +105,23 @@ export default function VideoPage() {
     }
 
     const previousStatus = localLikeStatus;
+    const previousLikeCount = localLikeCount;
+    const previousDislikeCount = localDislikeCount;
     
-    // Optimistic update
+    // Optimistic update for like status
     if (localLikeStatus?.isLike === true) {
+      // Removing like
       setLocalLikeStatus(null);
-    } else {
+      setLocalLikeCount(prev => prev - 1);
+    } else if (localLikeStatus?.isLike === false) {
+      // Switching from dislike to like
       setLocalLikeStatus({ isLike: true });
+      setLocalLikeCount(prev => prev + 1);
+      setLocalDislikeCount(prev => prev - 1);
+    } else {
+      // Adding new like
+      setLocalLikeStatus({ isLike: true });
+      setLocalLikeCount(prev => prev + 1);
     }
 
     try {
@@ -84,6 +133,8 @@ export default function VideoPage() {
     } catch {
       // Revert on error
       setLocalLikeStatus(previousStatus);
+      setLocalLikeCount(previousLikeCount);
+      setLocalDislikeCount(previousDislikeCount);
       toast.error("Failed to like video");
     }
   };
@@ -95,12 +146,23 @@ export default function VideoPage() {
     }
 
     const previousStatus = localLikeStatus;
+    const previousLikeCount = localLikeCount;
+    const previousDislikeCount = localDislikeCount;
     
-    // Optimistic update
+    // Optimistic update for dislike status
     if (localLikeStatus?.isLike === false) {
+      // Removing dislike
       setLocalLikeStatus(null);
-    } else {
+      setLocalDislikeCount(prev => prev - 1);
+    } else if (localLikeStatus?.isLike === true) {
+      // Switching from like to dislike
       setLocalLikeStatus({ isLike: false });
+      setLocalDislikeCount(prev => prev + 1);
+      setLocalLikeCount(prev => prev - 1);
+    } else {
+      // Adding new dislike
+      setLocalLikeStatus({ isLike: false });
+      setLocalDislikeCount(prev => prev + 1);
     }
 
     try {
@@ -112,6 +174,8 @@ export default function VideoPage() {
     } catch {
       // Revert on error
       setLocalLikeStatus(previousStatus);
+      setLocalLikeCount(previousLikeCount);
+      setLocalDislikeCount(previousDislikeCount);
       toast.error("Failed to dislike video");
     }
   };
@@ -200,7 +264,7 @@ export default function VideoPage() {
                   <ThumbsUp className={`h-4 w-4 ${
                     localLikeStatus?.isLike === true ? 'fill-current' : ''
                   }`} />
-                  {formatViewCount(video.likeCount)}
+                  {formatViewCount(localLikeCount)}
                 </Button>
                 <div className="w-px h-6 bg-gray-300 dark:bg-gray-700" />
                 <Button 
@@ -217,7 +281,7 @@ export default function VideoPage() {
                   <ThumbsDown className={`h-4 w-4 ${
                     localLikeStatus?.isLike === false ? 'fill-current' : ''
                   }`} />
-                  {formatViewCount(video.dislikeCount)}
+                  {formatViewCount(localDislikeCount)}
                 </Button>
               </div>
               <Button variant="ghost" size="sm" className="gap-1 dark:text-gray-300">

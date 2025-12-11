@@ -197,18 +197,53 @@ export const videosRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  // Increment view count
-  incrementViews: baseProcedure
+  // Check if user has viewed a video (for view count tracking)
+  hasViewedVideo: protectedProcedure
+    .input(z.object({ videoId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const viewed = await ctx.db
+        .select({ id: watchHistory.id })
+        .from(watchHistory)
+        .where(
+          and(
+            eq(watchHistory.videoId, input.videoId),
+            eq(watchHistory.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
+
+      return { hasViewed: viewed.length > 0 };
+    }),
+
+  // Increment view count (only once per user per video)
+  incrementViews: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(videos)
-        .set({
-          viewCount: sql`${videos.viewCount} + 1`,
-        })
-        .where(eq(videos.id, input.id));
+      // Check if user has already viewed this video
+      const viewed = await ctx.db
+        .select({ id: watchHistory.id })
+        .from(watchHistory)
+        .where(
+          and(
+            eq(watchHistory.videoId, input.id),
+            eq(watchHistory.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
 
-      return { success: true };
+      // Only increment if this is the user's first view
+      if (viewed.length === 0) {
+        await ctx.db
+          .update(videos)
+          .set({
+            viewCount: sql`${videos.viewCount} + 1`,
+          })
+          .where(eq(videos.id, input.id));
+
+        return { incremented: true };
+      }
+
+      return { incremented: false };
     }),
 
   // Like or dislike video
