@@ -9,7 +9,9 @@ interface HomeLayoutProps {
 export const HomeLayout = ({ children }: HomeLayoutProps) => {
   return (
     <SidebarProvider>
-      <div className="w-full">
+      <div className="w-full noise-overlay">
+        {/* Aurora gradient background */}
+        <div className="aurora-bg" />
         <HomeNavbar/>
         <div className="flex min-h-screen pt-14">
           <HomeSidebar/>

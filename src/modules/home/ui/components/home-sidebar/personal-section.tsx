@@ -35,7 +35,7 @@ export const PersonalSection = () => {
                                 tooltip={item.title}
                                 asChild
                                 isActive={false}
-                                className="py-3"
+                                className="py-3 sidebar-glow-item rounded-lg transition-all duration-200"
                                 onClick={(e) => {
                                     if (!isLoaded) return;   // 🔥 prevents hydration bug
 

@@ -28,6 +28,9 @@ import {
   Check,
   ListPlus,
   Clock,
+  MessageSquareText,
+  Captions,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -228,7 +231,7 @@ function RecommendationCard({
 }) {
   return (
     <Link href={`/feed/${video.id}`} className="group flex gap-3">
-      <div className="relative w-40 aspect-video bg-muted rounded-lg overflow-hidden flex-shrink-0">
+      <div className="relative w-40 aspect-video bg-muted rounded-lg overflow-hidden flex-shrink-0 thumbnail-hover">
         {video.thumbnailURL ? (
           <Image
             src={video.thumbnailURL}
@@ -272,6 +275,7 @@ export default function VideoPage() {
   const [showTranscript, setShowTranscript] = useState(false);
   const [showSummary, setShowSummary] = useState(true);
   const [showChapters, setShowChapters] = useState(false);
+  const [showCommentSummary, setShowCommentSummary] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -307,6 +311,16 @@ export default function VideoPage() {
     undefined,
     { enabled: !!isSignedIn && playlistOpen }
   );
+
+  const { data: commentSummary } = trpc.videos.summarizeVideoComments.useQuery(
+    { videoId },
+    { enabled: !!videoId && showCommentSummary }
+  );
+
+  // Generate subtitle data URL from WebVTT content
+  const subtitleDataUrl = video?.subtitlesVTT
+    ? `data:text/vtt;charset=utf-8,${encodeURIComponent(video.subtitlesVTT)}`
+    : null;
 
   const toggleSub = trpc.subscriptions.toggle.useMutation({
     onSuccess: () => {
@@ -416,15 +430,27 @@ export default function VideoPage() {
           )}
 
           {/* Video Player */}
-          <div className="aspect-video bg-black rounded-xl overflow-hidden">
+          <div className="aspect-video bg-black rounded-xl overflow-hidden relative group/player">
+            <div className="absolute -inset-[1px] rounded-xl bg-gradient-to-r from-primary/0 via-primary/0 to-primary/0 group-hover/player:from-primary/30 group-hover/player:via-transparent group-hover/player:to-[hsl(190,80%,50%)]/30 transition-all duration-700 pointer-events-none" />
             {video.videoURL ? (
               <video
                 src={video.videoURL}
                 controls
                 autoPlay
-                className="w-full h-full"
+                className="w-full h-full relative z-10"
                 poster={video.thumbnailURL || undefined}
-              />
+                crossOrigin="anonymous"
+              >
+                {subtitleDataUrl && (
+                  <track
+                    kind="captions"
+                    src={subtitleDataUrl}
+                    srcLang="en"
+                    label="English"
+                    default
+                  />
+                )}
+              </video>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white">
                 <p>Video not available</p>
@@ -433,7 +459,7 @@ export default function VideoPage() {
           </div>
 
           {/* Title */}
-          <h1 className="text-xl font-semibold tracking-tight">
+          <h1 className="text-xl font-bold tracking-tight">
             {video.title}
           </h1>
 
@@ -626,7 +652,7 @@ export default function VideoPage() {
           </div>
 
           {/* Channel Info */}
-          <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-xl border border-border">
+          <div className="flex items-start gap-4 p-4 glass-card rounded-xl">
             <Link href={`/channel/${video.user.id}`}>
               <Avatar className="h-11 w-11 rounded-lg">
                 <AvatarImage src={video.user.imageURL} />
@@ -672,7 +698,7 @@ export default function VideoPage() {
 
           {/* AI Summary */}
           {video.aiSummary && (
-            <div className="border border-primary/15 bg-primary/[0.02] rounded-xl overflow-hidden">
+            <div className="glass-card border-primary/15 rounded-xl overflow-hidden">
               <button
                 onClick={() => setShowSummary(!showSummary)}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-primary/5 transition-colors"
@@ -699,7 +725,7 @@ export default function VideoPage() {
 
           {/* Chapters */}
           {video.chapters && video.chapters.length > 0 && (
-            <div className="border border-border rounded-xl overflow-hidden">
+            <div className="glass-card rounded-xl overflow-hidden">
               <button
                 onClick={() => setShowChapters(!showChapters)}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
@@ -734,7 +760,7 @@ export default function VideoPage() {
 
           {/* Transcript */}
           {video.transcript && (
-            <div className="border border-border rounded-xl overflow-hidden">
+            <div className="glass-card rounded-xl overflow-hidden">
               <button
                 onClick={() => setShowTranscript(!showTranscript)}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
@@ -759,8 +785,45 @@ export default function VideoPage() {
             </div>
           )}
 
+          {/* Comment Summary (AI) */}
+          <div className="glass-card rounded-xl overflow-hidden">
+            <button
+              onClick={() => setShowCommentSummary(!showCommentSummary)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-primary/5 transition-colors"
+            >
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <MessageSquareText className="h-4 w-4 text-primary" />
+                AI Comment Summary
+              </div>
+              {showCommentSummary ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+            {showCommentSummary && (
+              <div className="px-4 pb-4">
+                {commentSummary?.summary ? (
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {commentSummary.summary}
+                  </p>
+                ) : commentSummary?.commentCount !== undefined &&
+                  commentSummary.commentCount < 3 ? (
+                  <p className="text-sm text-muted-foreground italic">
+                    Need at least 3 comments to generate a summary.
+                  </p>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Analyzing comments...
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Comments */}
-          <div className="border-t border-border pt-5">
+          <div className="border-t border-border/50 pt-5">
             <CommentSection videoId={videoId} />
           </div>
         </div>

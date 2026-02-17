@@ -90,6 +90,7 @@ export const videos = pgTable("videos", {
   aiSummary: text("ai_summary"),
   transcript: text("transcript"),
   chapters: jsonb("chapters").$type<{ time: number; title: string }[]>(),
+  subtitlesVTT: text("subtitles_vtt"),
   nsfwScore: real("nsfw_score"),
   isNsfw: boolean("is_nsfw").default(false),
   userId: uuid("user_id")
@@ -122,42 +123,54 @@ export const comments = pgTable("comments", {
 });
 
 // Video likes table
-export const videoLikes = pgTable("video_likes", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  videoId: uuid("video_id")
-    .notNull()
-    .references(() => videos.id, { onDelete: "cascade" }),
-  isLike: boolean("is_like").notNull(), // true = like, false = dislike
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const videoLikes = pgTable(
+  "video_likes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    videoId: uuid("video_id")
+      .notNull()
+      .references(() => videos.id, { onDelete: "cascade" }),
+    isLike: boolean("is_like").notNull(), // true = like, false = dislike
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("video_likes_user_video_idx").on(t.userId, t.videoId)]
+);
 
 // Subscriptions table
-export const subscriptions = pgTable("subscriptions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  subscriberId: uuid("subscriber_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  channelId: uuid("channel_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    subscriberId: uuid("subscriber_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("subscriptions_subscriber_channel_idx").on(t.subscriberId, t.channelId)]
+);
 
 // Watch History table
-export const watchHistory = pgTable("watch_history", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  videoId: uuid("video_id")
-    .notNull()
-    .references(() => videos.id, { onDelete: "cascade" }),
-  watchedAt: timestamp("watched_at").defaultNow().notNull(),
-  watchDuration: integer("watch_duration").default(0), // seconds watched
-});
+export const watchHistory = pgTable(
+  "watch_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    videoId: uuid("video_id")
+      .notNull()
+      .references(() => videos.id, { onDelete: "cascade" }),
+    watchedAt: timestamp("watched_at").defaultNow().notNull(),
+    watchDuration: integer("watch_duration").default(0), // seconds watched
+  },
+  (t) => [uniqueIndex("watch_history_user_video_idx").on(t.userId, t.videoId)]
+);
 
 // Playlists table
 export const playlists = pgTable("playlists", {
@@ -173,17 +186,21 @@ export const playlists = pgTable("playlists", {
 });
 
 // Playlist Videos (join table)
-export const playlistVideos = pgTable("playlist_videos", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  playlistId: uuid("playlist_id")
-    .notNull()
-    .references(() => playlists.id, { onDelete: "cascade" }),
-  videoId: uuid("video_id")
-    .notNull()
-    .references(() => videos.id, { onDelete: "cascade" }),
-  position: integer("position").default(0).notNull(),
-  addedAt: timestamp("added_at").defaultNow().notNull(),
-});
+export const playlistVideos = pgTable(
+  "playlist_videos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    playlistId: uuid("playlist_id")
+      .notNull()
+      .references(() => playlists.id, { onDelete: "cascade" }),
+    videoId: uuid("video_id")
+      .notNull()
+      .references(() => videos.id, { onDelete: "cascade" }),
+    position: integer("position").default(0).notNull(),
+    addedAt: timestamp("added_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("playlist_videos_playlist_video_idx").on(t.playlistId, t.videoId)]
+);
 
 // Notifications table
 export const notifications = pgTable("notifications", {

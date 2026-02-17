@@ -257,6 +257,205 @@ export async function transcribeVideo(videoUrl: string): Promise<string> {
   }
 }
 
+// ─── Video Transcription with Timestamps (via Replicate Whisper) ─────────────
+
+export interface TranscriptSegment {
+  start: number; // seconds
+  end: number; // seconds
+  text: string;
+}
+
+/**
+ * Transcribe a video and return timestamped segments for WebVTT subtitle generation.
+ */
+export async function transcribeVideoWithTimestamps(
+  videoUrl: string
+): Promise<TranscriptSegment[]> {
+  const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
+  if (!REPLICATE_API_TOKEN) {
+    console.warn("REPLICATE_API_TOKEN not set, skipping transcription");
+    return [];
+  }
+
+  try {
+    const response = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version:
+          "cdd97b257f93cb89dede1c7584df59efd8f303ab98c0c795db5f0a0f7b119485",
+        input: {
+          audio: videoUrl,
+          model: "large-v3",
+          language: "en",
+          translate: false,
+          transcription: "srt", // Request SRT format for timestamps
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Replicate API error: ${response.status}`);
+    }
+
+    const prediction = await response.json();
+
+    // Poll for completion (max 5 minutes)
+    const maxAttempts = 60;
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((r) => setTimeout(r, 5000));
+
+      const statusResponse = await fetch(
+        `https://api.replicate.com/v1/predictions/${prediction.id}`,
+        {
+          headers: { Authorization: `Bearer ${REPLICATE_API_TOKEN}` },
+        }
+      );
+
+      const status = await statusResponse.json();
+
+      if (status.status === "succeeded") {
+        const output = status.output;
+
+        // Handle segments array from Whisper
+        if (output?.segments && Array.isArray(output.segments)) {
+          return output.segments.map(
+            (seg: { start: number; end: number; text: string }) => ({
+              start: seg.start,
+              end: seg.end,
+              text: seg.text.trim(),
+            })
+          );
+        }
+
+        // Handle SRT string output - parse it into segments
+        const srtText =
+          typeof output === "string"
+            ? output
+            : output?.transcription || output?.text || "";
+
+        if (srtText) {
+          return parseSrtToSegments(srtText);
+        }
+
+        return [];
+      }
+
+      if (status.status === "failed") {
+        throw new Error(`Transcription failed: ${status.error}`);
+      }
+    }
+
+    console.warn("Transcription with timestamps timed out");
+    return [];
+  } catch (err) {
+    console.error("Timestamped transcription failed:", err);
+    return [];
+  }
+}
+
+/**
+ * Parse SRT formatted text into TranscriptSegments
+ */
+function parseSrtToSegments(srt: string): TranscriptSegment[] {
+  const blocks = srt
+    .trim()
+    .split(/\n\n+/)
+    .filter(Boolean);
+  const segments: TranscriptSegment[] = [];
+
+  for (const block of blocks) {
+    const lines = block.trim().split("\n");
+    // SRT block: index, timestamp line, text lines
+    const timeLine = lines.find((l) => l.includes("-->"));
+    if (!timeLine) continue;
+
+    const [startStr, endStr] = timeLine.split("-->").map((s) => s.trim());
+    const start = parseSrtTime(startStr);
+    const end = parseSrtTime(endStr);
+    // Text is everything after the timestamp line
+    const textIdx = lines.indexOf(timeLine);
+    const text = lines
+      .slice(textIdx + 1)
+      .join(" ")
+      .trim();
+
+    if (!isNaN(start) && !isNaN(end) && text) {
+      segments.push({ start, end, text });
+    }
+  }
+
+  return segments;
+}
+
+function parseSrtTime(time: string): number {
+  // Format: HH:MM:SS,mmm or HH:MM:SS.mmm
+  const parts = time.replace(",", ".").split(":");
+  if (parts.length !== 3) return NaN;
+  const [h, m, s] = parts.map(Number);
+  return h * 3600 + m * 60 + s;
+}
+
+/**
+ * Convert TranscriptSegments to WebVTT subtitle format
+ */
+export function generateWebVTT(segments: TranscriptSegment[]): string {
+  let vtt = "WEBVTT\n\n";
+
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    vtt += `${i + 1}\n`;
+    vtt += `${formatVTTTime(seg.start)} --> ${formatVTTTime(seg.end)}\n`;
+    vtt += `${seg.text}\n\n`;
+  }
+
+  return vtt;
+}
+
+function formatVTTTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const ms = Math.round((s - Math.floor(s)) * 1000);
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${Math.floor(s).toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
+}
+
+// ─── Comment Summarization ──────────────────────────────────────────────────
+
+export async function summarizeComments(
+  comments: Array<{ content: string; userName: string }>
+): Promise<string> {
+  if (comments.length === 0) return "No comments to summarize.";
+
+  const commentList = comments
+    .slice(0, 50) // Limit to 50 most recent comments
+    .map((c, i) => `${i + 1}. ${c.userName}: "${c.content}"`)
+    .join("\n");
+
+  const prompt = `Summarize the general sentiment and key themes from these video comments. 
+Highlight common opinions, questions, and notable feedback. Keep it under 150 words.
+
+Comments:
+${commentList}
+
+Return ONLY the summary text.`;
+
+  try {
+    const summary = await pollinationsText({
+      prompt,
+      systemPrompt:
+        "You summarize video comment sections. Be concise and insightful. Identify themes and sentiment.",
+    });
+    return summary.trim().slice(0, 600);
+  } catch (err) {
+    console.error("Comment summarization failed:", err);
+    return "Unable to generate comment summary.";
+  }
+}
+
 // ─── NSFW Detection (via Replicate) ──────────────────────────────────────────
 
 export interface NsfwResult {

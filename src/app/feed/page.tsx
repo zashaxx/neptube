@@ -36,9 +36,9 @@ function VideoCard({ video }: { video: {
 }}) {
   return (
     <Link href={`/feed/${video.id}`} className="group">
-      <div className="rounded-xl border border-border bg-card overflow-hidden transition-all hover:shadow-md hover:border-primary/20">
+      <div className="glass-card gradient-border rounded-xl overflow-hidden">
         {/* Thumbnail */}
-        <div className="relative aspect-video bg-muted overflow-hidden">
+        <div className="relative aspect-video bg-muted overflow-hidden thumbnail-hover">
           {video.isNsfw && (
             <div className="absolute inset-0 z-10 bg-black/80 backdrop-blur-xl flex items-center justify-center">
               <span className="text-red-400 text-xs font-medium">NSFW</span>
@@ -49,7 +49,7 @@ function VideoCard({ video }: { video: {
               src={video.thumbnailURL}
               alt={video.title}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
@@ -118,7 +118,7 @@ function VideoCard({ video }: { video: {
 
 function VideoCardSkeleton() {
   return (
-    <div className="rounded-xl border border-border overflow-hidden">
+    <div className="glass-card rounded-xl overflow-hidden">
       <Skeleton className="aspect-video" />
       <div className="p-3.5">
         <div className="flex gap-3">
@@ -183,8 +183,12 @@ function FeedPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {searchQuery ? `Results for "${searchQuery}"` : "Explore"}
+        <h1 className="text-2xl font-bold tracking-tight">
+          {searchQuery ? (
+            <>Results for <span className="gradient-text">"{searchQuery}"</span></>
+          ) : (
+            <span className="gradient-text">Explore</span>
+          )}
         </h1>
       </div>
 
@@ -214,7 +218,7 @@ function FeedPage() {
           </p>
           {!searchQuery && (
             <Link href="/studio/upload">
-              <Button className="gap-2">
+              <Button className="gap-2 gradient-btn rounded-lg px-5 py-2 font-medium shadow-lg">
                 <Upload className="h-4 w-4" />
                 Upload Video
               </Button>
@@ -225,7 +229,9 @@ function FeedPage() {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
             {allVideos.map((video) => (
-              <VideoCard key={video.id} video={video} />
+              <div key={video.id} className="card-animate">
+                <VideoCard video={video} />
+              </div>
             ))}
           </div>
 

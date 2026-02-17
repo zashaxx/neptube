@@ -25,14 +25,14 @@ export const SearchInput = () => {
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full max-w-[520px]">
-      <div className="relative w-full">
+      <div className="relative w-full glow-ring rounded-lg transition-all">
         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
         <input
           type="text"
           placeholder="Search videos..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-10 pr-10 py-2 rounded-lg border border-border bg-muted/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 placeholder:text-muted-foreground transition-all"
+          className="w-full pl-10 pr-10 py-2 rounded-lg border border-border/60 bg-muted/30 backdrop-blur-sm text-sm focus:outline-none placeholder:text-muted-foreground transition-all"
         />
         {query && (
           <button

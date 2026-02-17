@@ -74,7 +74,7 @@ export default function ChannelPage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Banner */}
-      <div className="relative w-full h-40 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5 overflow-hidden">
+      <div className="relative w-full h-44 overflow-hidden">
         {channel.bannerURL ? (
           <Image
             src={channel.bannerURL}
@@ -83,14 +83,15 @@ export default function ChannelPage() {
             className="object-cover"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-primary/10 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(262,83%,58%)] via-[hsl(280,70%,55%)] to-[hsl(190,80%,50%)] opacity-30" />
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
       </div>
 
       {/* Channel Info */}
       <div className="px-6 pb-6">
-        <div className="flex items-end gap-5 -mt-10">
-          <Avatar className="h-24 w-24 rounded-xl border-4 border-background shadow-lg">
+        <div className="flex items-end gap-5 -mt-12">
+          <Avatar className="h-24 w-24 rounded-xl border-4 border-background shadow-lg ring-2 ring-primary/20">
             <AvatarImage src={channel.imageURL} />
             <AvatarFallback className="rounded-xl bg-primary text-primary-foreground text-2xl">
               {channel.name[0]?.toUpperCase()}
@@ -99,7 +100,7 @@ export default function ChannelPage() {
 
           <div className="flex-1 flex items-end justify-between pb-1">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">
+              <h1 className="text-2xl font-bold tracking-tight gradient-text">
                 {channel.name}
               </h1>
               <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
@@ -117,7 +118,7 @@ export default function ChannelPage() {
                 onClick={() => toggleSub.mutate({ channelId: userId })}
                 disabled={toggleSub.isPending}
                 variant={isSubscribed ? "outline" : "default"}
-                className="rounded-lg"
+                className={`rounded-lg ${!isSubscribed ? 'gradient-btn' : ''}`}
               >
                 {isSubscribed ? "Subscribed" : "Subscribe"}
               </Button>
@@ -144,38 +145,42 @@ export default function ChannelPage() {
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {channel.videos.map((video) => (
-              <Link key={video.id} href={`/feed/${video.id}`} className="group">
-                <div className="relative aspect-video bg-muted rounded-xl overflow-hidden mb-2">
-                  {video.thumbnailURL ? (
-                    <Image
-                      src={video.thumbnailURL}
-                      alt={video.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                      <span className="text-primary font-bold text-xl">
-                        {video.title[0]?.toUpperCase()}
+            {channel.videos.map((video, i) => (
+              <Link key={video.id} href={`/feed/${video.id}`} className="group card-animate" style={{ animationDelay: `${i * 0.04}s` }}>
+                <div className="glass-card gradient-border rounded-xl overflow-hidden">
+                  <div className="relative aspect-video bg-muted overflow-hidden thumbnail-hover">
+                    {video.thumbnailURL ? (
+                      <Image
+                        src={video.thumbnailURL}
+                        alt={video.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                        <span className="text-primary font-bold text-xl">
+                          {video.title[0]?.toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+                      {video.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      <span className="flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        {formatViewCount(video.viewCount)} views
+                      </span>
+                      <span>·</span>
+                      <span>
+                        {formatDistanceToNow(new Date(video.createdAt), {
+                          addSuffix: true,
+                        })}
                       </span>
                     </div>
-                  )}
-                </div>
-                <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
-                  {video.title}
-                </h3>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                  <span className="flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    {formatViewCount(video.viewCount)} views
-                  </span>
-                  <span>·</span>
-                  <span>
-                    {formatDistanceToNow(new Date(video.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </span>
+                  </div>
                 </div>
               </Link>
             ))}

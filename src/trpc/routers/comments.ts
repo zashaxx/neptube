@@ -3,6 +3,8 @@ import { eq, desc, and, isNull, sql } from "drizzle-orm";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "../init";
 import { comments, users, videos, notifications } from "@/db/schema";
 import { analyzeSentiment, analyzeToxicity } from "@/lib/ai";
+import { rateLimit, COMMENT_RATE_LIMIT } from "@/lib/rate-limit";
+import { TRPCError } from "@trpc/server";
 
 export const commentsRouter = createTRPCRouter({
   // Get comments for a video
@@ -87,6 +89,15 @@ export const commentsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Rate limit check
+      const rl = rateLimit(ctx.user.id, "comment", COMMENT_RATE_LIMIT);
+      if (!rl.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Too many comments. Try again in ${rl.resetInSeconds}s.`,
+        });
+      }
+
       // Run sentiment and toxicity analysis in parallel
       const [sentimentResult, toxicityResult] = await Promise.all([
         analyzeSentiment(input.content),

@@ -55,9 +55,9 @@ export default function PlaylistsPage() {
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <ListVideo className="h-6 w-6 text-primary" />
-            Playlists
+            <span className="gradient-text">Playlists</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {playlists?.length ?? 0} playlists
@@ -65,7 +65,7 @@ export default function PlaylistsPage() {
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 gradient-btn rounded-lg">
               <Plus className="h-4 w-4" />
               New Playlist
             </Button>
@@ -132,7 +132,7 @@ export default function PlaylistsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {playlists.map((playlist) => (
-            <Card key={playlist.id} className="group relative overflow-hidden">
+            <Card key={playlist.id} className="group relative overflow-hidden glass-card gradient-border">
               <Link href={`/playlists/${playlist.id}`}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">

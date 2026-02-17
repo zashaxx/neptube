@@ -1,17 +1,22 @@
 import { z } from "zod";
 import { eq, desc, and, sql, ilike, or, ne, inArray, lt } from "drizzle-orm";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "../init";
-import { videos, users, videoLikes, subscriptions, notifications } from "@/db/schema";
+import { videos, users, videoLikes, subscriptions, notifications, comments } from "@/db/schema";
 import {
   generateTags,
   generateSummary,
   transcribeVideo,
+  transcribeVideoWithTimestamps,
+  generateWebVTT,
   detectNsfw,
   getRecommendationScores,
   generateChapters,
   autoCategorizVideo,
   calculateTrendingScore,
+  summarizeComments,
 } from "@/lib/ai";
+import { rateLimit, UPLOAD_RATE_LIMIT, LIKE_RATE_LIMIT, AI_RATE_LIMIT } from "@/lib/rate-limit";
+import { TRPCError } from "@trpc/server";
 
 export const videosRouter = createTRPCRouter({
   // Get all public videos (feed) with optional search
@@ -109,6 +114,7 @@ export const videosRouter = createTRPCRouter({
           aiSummary: videos.aiSummary,
           transcript: videos.transcript,
           chapters: videos.chapters,
+          subtitlesVTT: videos.subtitlesVTT,
           nsfwScore: videos.nsfwScore,
           isNsfw: videos.isNsfw,
           commentCount: videos.commentCount,
@@ -216,6 +222,15 @@ export const videosRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Rate limit check
+      const rl = rateLimit(ctx.user.id, "upload", UPLOAD_RATE_LIMIT);
+      if (!rl.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Upload limit reached. Try again in ${Math.ceil(rl.resetInSeconds / 60)} min.`,
+        });
+      }
+
       const newVideo = await ctx.db
         .insert(videos)
         .values({
@@ -391,6 +406,15 @@ export const videosRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Rate limit check
+      const rl = rateLimit(ctx.user.id, "like", LIKE_RATE_LIMIT);
+      if (!rl.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Slow down. Try again in ${rl.resetInSeconds}s.`,
+        });
+      }
+
       // Check if already liked/disliked
       const existing = await ctx.db
         .select()
@@ -734,5 +758,97 @@ export const videosRouter = createTRPCRouter({
         .slice(0, input.limit);
 
       return scored;
+    }),
+
+  // Generate WebVTT subtitles for a video
+  generateSubtitles: protectedProcedure
+    .input(z.object({ videoId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      // Rate limit check
+      const rl = rateLimit(ctx.user.id, "ai-subtitles", AI_RATE_LIMIT);
+      if (!rl.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Slow down. Try again in ${rl.resetInSeconds}s.`,
+        });
+      }
+
+      const video = await ctx.db
+        .select({
+          id: videos.id,
+          videoURL: videos.videoURL,
+          userId: videos.userId,
+          subtitlesVTT: videos.subtitlesVTT,
+        })
+        .from(videos)
+        .where(eq(videos.id, input.videoId))
+        .limit(1);
+
+      if (!video[0]) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Video not found" });
+      }
+
+      // Only video owner can generate subtitles
+      if (video[0].userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not your video" });
+      }
+
+      if (!video[0].videoURL) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No video URL" });
+      }
+
+      // If subtitles already exist, return them
+      if (video[0].subtitlesVTT) {
+        return { vtt: video[0].subtitlesVTT };
+      }
+
+      // Transcribe with timestamps
+      const segments = await transcribeVideoWithTimestamps(video[0].videoURL);
+      if (segments.length === 0) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Transcription failed or returned no results",
+        });
+      }
+
+      // Generate WebVTT
+      const vtt = generateWebVTT(segments);
+
+      // Also save plain transcript if not yet set
+      const plainText = segments.map((s) => s.text).join(" ");
+
+      await ctx.db
+        .update(videos)
+        .set({
+          subtitlesVTT: vtt,
+          transcript: plainText,
+          updatedAt: new Date(),
+        })
+        .where(eq(videos.id, input.videoId));
+
+      return { vtt };
+    }),
+
+  // Summarize comments for a video using AI
+  summarizeVideoComments: baseProcedure
+    .input(z.object({ videoId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const videoComments = await ctx.db
+        .select({
+          content: comments.content,
+          userName: users.name,
+        })
+        .from(comments)
+        .innerJoin(users, eq(comments.userId, users.id))
+        .where(eq(comments.videoId, input.videoId))
+        .orderBy(desc(comments.createdAt))
+        .limit(50);
+
+      if (videoComments.length < 3) {
+        return { summary: null, commentCount: videoComments.length };
+      }
+
+      const summary = await summarizeComments(videoComments);
+      return { summary, commentCount: videoComments.length };
     }),
 });

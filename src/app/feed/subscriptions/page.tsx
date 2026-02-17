@@ -62,7 +62,7 @@ function SubscriptionsFeed() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Subscriptions</h1>
+        <h1 className="text-2xl font-bold tracking-tight gradient-text">Subscriptions</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Latest from your {data.subscribedChannels} subscribed channels
         </p>
@@ -71,8 +71,8 @@ function SubscriptionsFeed() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
         {data.items.map((video) => (
           <Link key={video.id} href={`/feed/${video.id}`} className="group">
-            <div className="rounded-xl border border-border bg-card overflow-hidden transition-all hover:shadow-md hover:border-primary/20">
-              <div className="relative aspect-video bg-muted overflow-hidden">
+            <div className="glass-card gradient-border rounded-xl overflow-hidden">
+              <div className="relative aspect-video bg-muted overflow-hidden thumbnail-hover">
                 {video.isNsfw && (
                   <div className="absolute inset-0 z-10 bg-black/80 backdrop-blur-xl flex items-center justify-center">
                     <span className="text-red-400 text-xs font-medium">NSFW</span>

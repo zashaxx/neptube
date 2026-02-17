@@ -57,23 +57,23 @@ function VideoCard({ video, type }: {
 
   return (
     <Link href={`/feed/${video.id}`}>
-      <div className="group cursor-pointer">
+      <div className="group cursor-pointer card-animate">
         {/* Thumbnail */}
-        <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-3">
+        <div className="relative aspect-video rounded-xl overflow-hidden bg-muted mb-3 glass-card gradient-border thumbnail-hover">
           {video.thumbnailURL ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={video.thumbnailURL}
               alt={video.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Eye className="h-12 w-12 text-gray-300 dark:text-gray-600" />
+              <Eye className="h-12 w-12 text-muted-foreground/40" />
             </div>
           )}
           {video.duration && video.duration > 0 && (
-            <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded">
+            <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded z-10">
               {formatDuration(video.duration)}
             </div>
           )}
@@ -82,7 +82,7 @@ function VideoCard({ video, type }: {
         {/* Video Info */}
         <div className="space-y-3">
           {/* Title */}
-          <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors dark:text-white">
+          <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
             {video.title}
           </h3>
 
@@ -90,17 +90,17 @@ function VideoCard({ video, type }: {
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
               <AvatarImage src={video.user.imageURL} alt={video.user.name} />
-              <AvatarFallback className="text-xs">
+              <AvatarFallback className="text-xs bg-primary/10 text-primary">
                 {video.user.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <p className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
+            <p className="text-xs text-muted-foreground hover:text-foreground">
               {video.user.name}
             </p>
           </div>
 
           {/* Views and Action Date */}
-          <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{formatViewCount(video.viewCount)} views</span>
             <span>•</span>
             {actionDate && (
@@ -151,11 +151,11 @@ function WatchHistoryTab() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-        <div className="w-24 h-24 rounded-full bg-red-50 dark:bg-red-950/20 flex items-center justify-center mb-4">
-          <Clock className="h-12 w-12 text-red-500 dark:text-red-400" />
+        <div className="w-24 h-24 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+          <Clock className="h-12 w-12 text-destructive" />
         </div>
-        <h2 className="text-xl font-semibold mb-2 dark:text-white">Error loading history</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">{error.message}</p>
+        <h2 className="text-xl font-semibold mb-2">Error loading history</h2>
+        <p className="text-muted-foreground text-sm">{error.message}</p>
       </div>
     );
   }
@@ -163,11 +163,11 @@ function WatchHistoryTab() {
   if (!data?.items.length) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-        <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-          <Clock className="h-12 w-12 text-gray-400 dark:text-gray-500" />
+        <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4">
+          <Clock className="h-12 w-12 text-muted-foreground" />
         </div>
-        <h2 className="text-xl font-semibold mb-2 dark:text-white">No watch history yet</h2>
-        <p className="text-gray-500 dark:text-gray-400">
+        <h2 className="text-xl font-semibold mb-2">No watch history yet</h2>
+        <p className="text-muted-foreground">
           Videos you watch will appear here
         </p>
       </div>
@@ -185,12 +185,12 @@ function WatchHistoryTab() {
 
 function HistoryPageContent() {
   return (
-    <div className="py-6 dark:bg-gray-950 bg-white min-h-screen w-full">
+    <div className="py-6 min-h-screen w-full">
       <div className="max-w-[2000px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold dark:text-white mb-2">Watch History</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold mb-2 gradient-text">Watch History</h1>
+          <p className="text-muted-foreground">
             Videos you&apos;ve watched recently
           </p>
         </div>
@@ -205,7 +205,7 @@ function HistoryPageContent() {
 export default function HistoryPage() {
   return (
     <Suspense fallback={
-      <div className="py-6 dark:bg-gray-950 bg-white min-h-screen w-full">
+      <div className="py-6 min-h-screen w-full">
         <div className="px-4 sm:px-6 lg:px-8">
           <Skeleton className="h-8 w-48 mb-2" />
           <Skeleton className="h-4 w-64 mb-6" />

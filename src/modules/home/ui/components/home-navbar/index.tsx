@@ -13,7 +13,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 export const HomeNavbar = () => {
   return (
-    <nav className="fixed top-0 left-0 right-0 h-14 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-3 pr-5 z-50">
+    <nav className="fixed top-0 left-0 right-0 h-14 bg-background/70 backdrop-blur-xl border-b border-border/50 flex items-center px-3 pr-5 z-50">
       <div className="flex items-center gap-4 w-full">
         {/* Menu and logo */}
         <div className="flex items-center flex-shrink-0">
@@ -21,7 +21,7 @@ export const HomeNavbar = () => {
           <Link href="/">
             <div className="px-3 flex items-center gap-2">
               <Image src="/logo.svg" height={28} width={28} alt="logo" />
-              <p className="text-lg font-semibold tracking-tight">NepTube</p>
+              <p className="text-lg font-bold tracking-tight gradient-text">NepTube</p>
             </div>
           </Link>
         </div>

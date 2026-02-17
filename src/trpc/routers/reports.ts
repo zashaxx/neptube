@@ -2,6 +2,8 @@ import { z } from "zod";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../init";
 import { reports, users } from "@/db/schema";
+import { rateLimit, REPORT_RATE_LIMIT } from "@/lib/rate-limit";
+import { TRPCError } from "@trpc/server";
 
 export const reportsRouter = createTRPCRouter({
   // Create a report
@@ -15,6 +17,15 @@ export const reportsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Rate limit check
+      const rl = rateLimit(ctx.user.id, "report", REPORT_RATE_LIMIT);
+      if (!rl.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Too many reports. Try again in ${Math.ceil(rl.resetInSeconds / 60)} min.`,
+        });
+      }
+
       // Check if user already reported this target
       const existing = await ctx.db
         .select()

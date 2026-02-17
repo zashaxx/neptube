@@ -51,9 +51,9 @@ function TrendingFeed() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Flame className="h-6 w-6 text-orange-500" />
-          Trending
+          <span className="gradient-text">Trending</span>
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Most popular videos right now
@@ -65,7 +65,7 @@ function TrendingFeed() {
           <Link
             key={video.id}
             href={`/feed/${video.id}`}
-            className="group flex gap-4 p-3 rounded-xl border border-border bg-card hover:shadow-md hover:border-primary/20 transition-all"
+            className="group flex gap-4 p-3 rounded-xl glass-card gradient-border transition-all"
           >
             {/* Rank number */}
             <div className="flex items-center justify-center w-10 flex-shrink-0">

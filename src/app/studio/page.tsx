@@ -80,17 +80,17 @@ export default function StudioPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-background border-b border-border">
+      <div className="bg-background/60 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link href="/feed" className="text-muted-foreground hover:text-foreground transition-colors">
                 ← Back
               </Link>
-              <h1 className="text-xl font-semibold tracking-tight">Creator Studio</h1>
+              <h1 className="text-xl font-bold tracking-tight gradient-text">Creator Studio</h1>
             </div>
             <Link href="/studio/upload">
-              <Button className="gap-2">
+              <Button className="gap-2 gradient-btn rounded-lg">
                 <Upload className="h-4 w-4" />
                 Upload Video
               </Button>
@@ -102,7 +102,7 @@ export default function StudioPage() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
+          <Card className="glass-card border-border/50">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Videos
@@ -110,11 +110,11 @@ export default function StudioPage() {
               <Video className="h-4 w-4 text-primary/50" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold">{videos?.length || 0}</div>
+              <div className="text-2xl font-bold gradient-text">{videos?.length || 0}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border-border/50">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Views
@@ -122,13 +122,13 @@ export default function StudioPage() {
               <Eye className="h-4 w-4 text-primary/50" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold">
+              <div className="text-2xl font-bold gradient-text">
                 {totalViews.toLocaleString()}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border-border/50">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Likes
@@ -136,7 +136,7 @@ export default function StudioPage() {
               <ThumbsUp className="h-4 w-4 text-primary/50" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold">
+              <div className="text-2xl font-bold gradient-text">
                 {totalLikes.toLocaleString()}
               </div>
             </CardContent>
@@ -144,7 +144,7 @@ export default function StudioPage() {
         </div>
 
         {/* Videos Table */}
-        <Card>
+        <Card className="glass-card border-border/50">
           <CardHeader>
             <CardTitle>Your Videos</CardTitle>
           </CardHeader>
