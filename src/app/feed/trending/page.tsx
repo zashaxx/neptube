@@ -5,9 +5,10 @@ import { trpc } from "@/trpc/client";
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
-import { Flame } from "lucide-react";
+import { Flame, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { YouTubeVideoCard, YouTubeVideoCardSkeleton } from "@/components/youtube-video-card";
 
 function formatViewCount(count: number): string {
   if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M views`;
@@ -17,6 +18,11 @@ function formatViewCount(count: number): string {
 
 function TrendingFeed() {
   const { data, isLoading } = trpc.videos.getTrending.useQuery({ limit: 20 });
+  const { data: ytConfigured } = trpc.youtube.isConfigured.useQuery();
+  const { data: ytTrending, isLoading: ytLoading } = trpc.youtube.trending.useQuery(
+    { maxResults: 12 },
+    { enabled: !!ytConfigured?.configured }
+  );
 
   if (isLoading) {
     return (
@@ -145,6 +151,40 @@ function TrendingFeed() {
           </Link>
         ))}
       </div>
+
+      {/* YouTube Trending Section */}
+      {ytConfigured?.configured && (ytTrending?.videos?.length ?? 0) > 0 && (
+        <div className="mt-8 pt-6 border-t border-border/50">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
+              <ExternalLink className="h-3.5 w-3.5 text-white" />
+            </div>
+            <h2 className="text-lg font-bold">Trending on YouTube</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+            {ytTrending!.videos.map((video) => (
+              <div key={video.id} className="card-animate">
+                <YouTubeVideoCard video={video} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {ytConfigured?.configured && ytLoading && (
+        <div className="mt-8 pt-6 border-t border-border/50">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
+              <ExternalLink className="h-3.5 w-3.5 text-white" />
+            </div>
+            <h2 className="text-lg font-bold">Trending on YouTube</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+            {[...Array(4)].map((_, i) => (
+              <YouTubeVideoCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

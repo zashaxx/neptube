@@ -10,6 +10,7 @@ import { playlistsRouter } from "./playlists";
 import { notificationsRouter } from "./notifications";
 import { reportsRouter } from "./reports";
 import { communityRouter } from "./community";
+import { youtubeRouter } from "./youtube";
 
 export const appRouter = createTRPCRouter({
   // Keep hello for testing
@@ -36,6 +37,7 @@ export const appRouter = createTRPCRouter({
   notifications: notificationsRouter,
   reports: reportsRouter,
   community: communityRouter,
+  youtube: youtubeRouter,
 });
 
 // export type definition of API

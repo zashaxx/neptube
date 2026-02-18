@@ -6,11 +6,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { Eye, Upload, Search, Loader2, Sparkles, TrendingUp } from "lucide-react";
+import { Eye, Upload, Search, Loader2, Sparkles, TrendingUp, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@clerk/nextjs";
+import { YouTubeVideoCard, YouTubeVideoCardSkeleton } from "@/components/youtube-video-card";
 
 function formatViewCount(count: number): string {
   if (count >= 1000000) {
@@ -157,6 +158,19 @@ function FeedPage() {
       { enabled: feedMode === "foryou" && !!isSignedIn && !searchQuery }
     );
 
+  // YouTube integration — fetch trending or search results
+  const { data: ytConfigured } = trpc.youtube.isConfigured.useQuery();
+  const { data: ytTrending, isLoading: ytTrendingLoading } = trpc.youtube.trending.useQuery(
+    { maxResults: 8 },
+    { enabled: !!ytConfigured?.configured && !searchQuery && feedMode === "explore" }
+  );
+  const { data: ytSearch, isLoading: ytSearchLoading } = trpc.youtube.search.useQuery(
+    { query: searchQuery, maxResults: 8 },
+    { enabled: !!ytConfigured?.configured && !!searchQuery }
+  );
+  const ytVideos = searchQuery ? (ytSearch?.videos ?? []) : (ytTrending?.videos ?? []);
+  const ytLoading = searchQuery ? ytSearchLoading : ytTrendingLoading;
+
   // Intersection observer for infinite scroll
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
@@ -300,6 +314,27 @@ function FeedPage() {
               </Button>
             </Link>
           )}
+
+          {/* Show YouTube videos even when local is empty */}
+          {ytConfigured?.configured && ytVideos.length > 0 && (
+            <div className="mt-8 w-full max-w-7xl text-left">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
+                  <ExternalLink className="h-3.5 w-3.5 text-white" />
+                </div>
+                <h2 className="text-lg font-bold">
+                  {searchQuery ? "YouTube Results" : "Trending on YouTube"}
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+                {ytVideos.map((video) => (
+                  <div key={video.id} className="card-animate">
+                    <YouTubeVideoCard video={video} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -317,6 +352,48 @@ function FeedPage() {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             )}
           </div>
+
+          {/* YouTube Section */}
+          {ytConfigured?.configured && ytVideos.length > 0 && (
+            <div className="mt-4 pt-6 border-t border-border/50">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
+                    <ExternalLink className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h2 className="text-lg font-bold">
+                    {searchQuery ? (
+                      <>YouTube results for <span className="text-red-500">&quot;{searchQuery}&quot;</span></>
+                    ) : (
+                      <span>Trending on YouTube</span>
+                    )}
+                  </h2>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+                {ytVideos.map((video) => (
+                  <div key={video.id} className="card-animate">
+                    <YouTubeVideoCard video={video} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {ytConfigured?.configured && ytLoading && (
+            <div className="mt-4 pt-6 border-t border-border/50">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
+                  <ExternalLink className="h-3.5 w-3.5 text-white" />
+                </div>
+                <h2 className="text-lg font-bold">Trending on YouTube</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
+                {[...Array(4)].map((_, i) => (
+                  <YouTubeVideoCardSkeleton key={i} />
+                ))}
+              </div>
+            </div>
+          )}
         </>
       ))}
     </div>
