@@ -107,6 +107,28 @@ export const videos = pgTable("videos", {
   isShort: boolean("is_short").default(false),
   allowDownload: boolean("allow_download").default(true),
   publishAt: timestamp("publish_at"), // Scheduled publish date
+  // AI Retention & Drop-off prediction
+  predictedRetentionCurve: jsonb("predicted_retention_curve").$type<number[]>(),
+  predictedDropPoints: jsonb("predicted_drop_points").$type<number[]>(),
+  rewatchProbability: real("rewatch_probability"),
+  // AI Trending
+  trendingScore: real("trending_score").default(0),
+  // AI Content DNA
+  contentDNA: jsonb("content_dna").$type<{
+    mood: string;
+    audienceType: string;
+    emotionalArc: string;
+    storytellingStyle: string;
+    energyLevel: string;
+  }>(),
+  // Revenue prediction
+  estimatedCPM: real("estimated_cpm"),
+  estimatedRevenuePer1k: real("estimated_revenue_per_1k"),
+  monetizationScore: integer("monetization_score"),
+  // Pre-publish risk
+  copyrightProbability: real("copyright_probability"),
+  controversyScore: real("controversy_score"),
+  brandSafetyScore: integer("brand_safety_score"),
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -336,6 +358,82 @@ export const videoFeedback = pgTable(
   (t) => [uniqueIndex("video_feedback_user_video_idx").on(t.userId, t.videoId)]
 );
 
+// ─── AI Thumbnail Scoring ────────────────────────────────────────────────────
+
+export const thumbnailScores = pgTable("thumbnail_scores", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  videoId: uuid("video_id")
+    .notNull()
+    .references(() => videos.id, { onDelete: "cascade" }),
+  attentionScore: real("attention_score"), // 0-100
+  ctrPrediction: real("ctr_prediction"), // 0-100 percentage
+  emotionDetected: text("emotion_detected"),
+  suggestions: jsonb("suggestions").$type<string[]>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── AI Script Analysis ─────────────────────────────────────────────────────
+
+export const scriptAnalysis = pgTable("script_analysis", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  videoId: uuid("video_id").references(() => videos.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  hookStrength: real("hook_strength"), // 0-100
+  retentionPrediction: real("retention_prediction"), // 0-100
+  engagementPrediction: real("engagement_prediction"), // 0-100
+  weakSegments: jsonb("weak_segments").$type<{ start: number; end: number; reason: string }[]>(),
+  suggestions: jsonb("suggestions").$type<string[]>(),
+  rawTranscript: text("raw_transcript"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Recommendation Score (transparent) ─────────────────────────────────────
+
+export const recommendationScores = pgTable("recommendation_scores", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  videoId: uuid("video_id")
+    .notNull()
+    .references(() => videos.id, { onDelete: "cascade" }),
+  titleMatchScore: real("title_match_score").default(0),
+  tagScore: real("tag_score").default(0),
+  categoryScore: real("category_score").default(0),
+  engagementWeight: real("engagement_weight").default(0),
+  finalScore: real("final_score").default(0),
+  computedAt: timestamp("computed_at").defaultNow().notNull(),
+});
+
+// ─── Short Clips (AI Auto-Clip) ─────────────────────────────────────────────
+
+export const shortClips = pgTable("short_clips", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  parentVideoId: uuid("parent_video_id")
+    .notNull()
+    .references(() => videos.id, { onDelete: "cascade" }),
+  startTime: real("start_time").notNull(),
+  endTime: real("end_time").notNull(),
+  hookStrength: real("hook_strength"),
+  caption: text("caption"),
+  verticalOptimized: boolean("vertical_optimized").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Viral Simulation Results ───────────────────────────────────────────────
+
+export const viralSimulations = pgTable("viral_simulations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  videoId: uuid("video_id")
+    .notNull()
+    .references(() => videos.id, { onDelete: "cascade" }),
+  publishTime: text("publish_time"),
+  niche: text("niche"),
+  reach24h: integer("reach_24h"),
+  reach48h: integer("reach_48h"),
+  confidenceScore: real("confidence_score"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -362,6 +460,11 @@ export const videosRelations = relations(videos, ({ one, many }) => ({
   likes: many(videoLikes),
   watchHistory: many(watchHistory),
   playlistVideos: many(playlistVideos),
+  thumbnailScores: many(thumbnailScores),
+  scriptAnalysis: many(scriptAnalysis),
+  recommendationScores: many(recommendationScores),
+  shortClips: many(shortClips),
+  viralSimulations: many(viralSimulations),
 }));
 
 export const commentsRelations = relations(comments, ({ one, many }) => ({
@@ -511,6 +614,45 @@ export const videoFeedbackRelations = relations(videoFeedback, ({ one }) => ({
   }),
   video: one(videos, {
     fields: [videoFeedback.videoId],
+    references: [videos.id],
+  }),
+}));
+
+export const thumbnailScoresRelations = relations(thumbnailScores, ({ one }) => ({
+  video: one(videos, {
+    fields: [thumbnailScores.videoId],
+    references: [videos.id],
+  }),
+}));
+
+export const scriptAnalysisRelations = relations(scriptAnalysis, ({ one }) => ({
+  video: one(videos, {
+    fields: [scriptAnalysis.videoId],
+    references: [videos.id],
+  }),
+  user: one(users, {
+    fields: [scriptAnalysis.userId],
+    references: [users.id],
+  }),
+}));
+
+export const recommendationScoresRelations = relations(recommendationScores, ({ one }) => ({
+  video: one(videos, {
+    fields: [recommendationScores.videoId],
+    references: [videos.id],
+  }),
+}));
+
+export const shortClipsRelations = relations(shortClips, ({ one }) => ({
+  parentVideo: one(videos, {
+    fields: [shortClips.parentVideoId],
+    references: [videos.id],
+  }),
+}));
+
+export const viralSimulationsRelations = relations(viralSimulations, ({ one }) => ({
+  video: one(videos, {
+    fields: [viralSimulations.videoId],
     references: [videos.id],
   }),
 }));

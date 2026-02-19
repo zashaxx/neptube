@@ -1077,3 +1077,557 @@ export function personalizedFeedScore(
 
   return Math.round(score * 100) / 100;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FEATURE SET 2: ADVANCED AI FEATURES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── 1. AI Thumbnail Scoring ─────────────────────────────────────────────────
+
+export interface ThumbnailScore {
+  attentionScore: number;    // 0-100
+  ctrPrediction: number;     // 0-100 percentage
+  emotionDetected: string;
+  suggestions: string[];
+}
+
+export async function analyzeThumbnailCTR(
+  imageUrl: string,
+  title: string
+): Promise<ThumbnailScore> {
+  const prompt = `You are a YouTube thumbnail optimization AI expert. Analyze this thumbnail context and predict its performance.
+
+Title: "${title}"
+Thumbnail URL: ${imageUrl}
+
+Evaluate based on these criteria:
+1. attentionScore (0-100): How eye-catching would this thumbnail be? Consider contrast, colors, faces, text overlay, composition.
+2. ctrPrediction (0-100): Predicted click-through rate percentage in an average feed.
+3. emotionDetected: What primary emotion does it evoke? (curiosity, excitement, shock, trust, awe, humor, fear, neutral)
+4. suggestions: Array of 2-4 specific improvements.
+
+Return ONLY valid JSON: {"attentionScore":75,"ctrPrediction":4.2,"emotionDetected":"curiosity","suggestions":["Add face close-up","Use bolder text","Increase contrast"]}`;
+
+  try {
+    const raw = await pollinationsText({
+      prompt,
+      systemPrompt: "You are a thumbnail optimization AI. Be specific and data-driven. Return only valid JSON.",
+      jsonMode: true,
+    });
+    const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
+    const r = JSON.parse(cleaned);
+    return {
+      attentionScore: clamp(r.attentionScore, 0, 100),
+      ctrPrediction: clamp(r.ctrPrediction, 0, 100),
+      emotionDetected: typeof r.emotionDetected === "string" ? r.emotionDetected : "neutral",
+      suggestions: Array.isArray(r.suggestions)
+        ? r.suggestions.filter((s: unknown): s is string => typeof s === "string").slice(0, 4)
+        : [],
+    };
+  } catch (err) {
+    console.error("Thumbnail scoring failed:", err);
+    return { attentionScore: 50, ctrPrediction: 3.0, emotionDetected: "neutral", suggestions: [] };
+  }
+}
+
+export async function generateThumbnailVariants(
+  title: string,
+  description?: string | null
+): Promise<string[]> {
+  const prompt = `Suggest 4 different creative thumbnail concepts for this video. Each concept should be unique in style.
+
+Title: "${title}"
+${description ? `Description: "${description.slice(0, 300)}"` : ""}
+
+For each concept, describe: composition, colors, text overlay, emotion target.
+Return ONLY a JSON array of 4 description strings.`;
+
+  try {
+    const raw = await pollinationsText({
+      prompt,
+      systemPrompt: "You generate creative thumbnail concepts. Return only valid JSON arrays of strings.",
+      jsonMode: true,
+    });
+    const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
+    const variants = JSON.parse(cleaned);
+    return Array.isArray(variants) ? variants.filter((v: unknown): v is string => typeof v === "string").slice(0, 4) : [];
+  } catch (err) {
+    console.error("Thumbnail variant generation failed:", err);
+    return [];
+  }
+}
+
+// ─── 2. AI Script Coach ─────────────────────────────────────────────────────
+
+export interface ScriptAnalysisResult {
+  hookStrength: number;           // 0-100
+  retentionPrediction: number;    // 0-100
+  engagementPrediction: number;   // 0-100
+  weakSegments: { start: number; end: number; reason: string }[];
+  suggestions: string[];
+}
+
+export async function analyzeScript(transcript: string): Promise<ScriptAnalysisResult> {
+  const prompt = `You are a YouTube content strategist and script coach. Analyze this video script/transcript for performance optimization.
+
+Script (first 4000 chars):
+"${transcript.slice(0, 4000)}"
+
+Analyze and provide:
+1. hookStrength (0-100): How strong is the opening 30 seconds? Does it create curiosity, promise value, or hook emotionally?
+2. retentionPrediction (0-100): Predicted average % of video viewers will watch.
+3. engagementPrediction (0-100): How likely are viewers to like, comment, or share?
+4. weakSegments: Array of {start: wordIndex, end: wordIndex, reason: string} — sections that are slow, confusing, or could lose viewers. Use word indices (approx).
+5. suggestions: Array of 3-5 actionable improvements.
+
+Return ONLY valid JSON.`;
+
+  try {
+    const raw = await pollinationsText({
+      prompt,
+      systemPrompt: "You are an expert YouTube script coach. Be specific and data-driven. Return only valid JSON.",
+      jsonMode: true,
+    });
+    const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
+    const r = JSON.parse(cleaned);
+    return {
+      hookStrength: clamp(r.hookStrength, 0, 100),
+      retentionPrediction: clamp(r.retentionPrediction, 0, 100),
+      engagementPrediction: clamp(r.engagementPrediction, 0, 100),
+      weakSegments: Array.isArray(r.weakSegments)
+        ? r.weakSegments.slice(0, 10).map((s: { start: number; end: number; reason: string }) => ({
+            start: Number(s.start) || 0,
+            end: Number(s.end) || 0,
+            reason: String(s.reason || ""),
+          }))
+        : [],
+      suggestions: Array.isArray(r.suggestions)
+        ? r.suggestions.filter((s: unknown): s is string => typeof s === "string").slice(0, 5)
+        : [],
+    };
+  } catch (err) {
+    console.error("Script analysis failed:", err);
+    return { hookStrength: 50, retentionPrediction: 40, engagementPrediction: 40, weakSegments: [], suggestions: [] };
+  }
+}
+
+// ─── 3. Retention & Drop-off Prediction ─────────────────────────────────────
+
+export interface RetentionPrediction {
+  retentionCurve: number[];  // Array of 20 percentages (at 5% intervals of video)
+  dropPoints: number[];       // Timestamps (in %) where drops occur
+  rewatchProbability: number; // 0-1
+}
+
+export async function predictRetention(
+  title: string,
+  transcript?: string | null,
+  duration?: number | null
+): Promise<RetentionPrediction> {
+  const durationStr = duration ? `${Math.floor(duration / 60)}m ${duration % 60}s` : "unknown";
+  const prompt = `Predict the viewer retention curve for this video.
+
+Title: "${title}"
+Duration: ${durationStr}
+${transcript ? `Script (first 2000 chars): "${transcript.slice(0, 2000)}"` : "No transcript available."}
+
+Generate:
+1. retentionCurve: Array of exactly 20 numbers (0-100), representing viewer retention at 5%, 10%, 15%, ..., 100% of the video. Start near 100, decline naturally.
+2. dropPoints: Array of percentage points (0-100) where significant drops occur (e.g., [15, 45, 80]).
+3. rewatchProbability: 0.0-1.0, how likely is a viewer to rewatch?
+
+Return ONLY valid JSON.`;
+
+  try {
+    const raw = await pollinationsText({
+      prompt,
+      systemPrompt: "You predict video retention curves based on content analysis. Be realistic. Return only valid JSON.",
+      jsonMode: true,
+    });
+    const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
+    const r = JSON.parse(cleaned);
+    return {
+      retentionCurve: Array.isArray(r.retentionCurve)
+        ? r.retentionCurve.map((n: unknown) => clamp(Number(n) || 0, 0, 100)).slice(0, 20)
+        : Array.from({ length: 20 }, (_, i) => Math.max(10, 100 - i * 4.5)),
+      dropPoints: Array.isArray(r.dropPoints)
+        ? r.dropPoints.map((n: unknown) => clamp(Number(n) || 0, 0, 100)).slice(0, 5)
+        : [],
+      rewatchProbability: clamp(Number(r.rewatchProbability) || 0, 0, 1),
+    };
+  } catch (err) {
+    console.error("Retention prediction failed:", err);
+    return {
+      retentionCurve: Array.from({ length: 20 }, (_, i) => Math.max(10, 100 - i * 4.5)),
+      dropPoints: [],
+      rewatchProbability: 0.3,
+    };
+  }
+}
+
+// ─── 4. Transparent Recommendation Score ────────────────────────────────────
+
+export interface RecommendationBreakdown {
+  titleMatchScore: number;
+  tagScore: number;
+  categoryScore: number;
+  engagementWeight: number;
+  finalScore: number;
+}
+
+export function computeRecommendationScore(
+  source: { title: string; tags: string[] | null; category: string | null },
+  candidate: {
+    title: string;
+    tags: string[] | null;
+    category: string | null;
+    viewCount: number;
+    likeCount: number;
+    commentCount: number;
+  }
+): RecommendationBreakdown {
+  // Title similarity (word overlap)
+  const srcWords = new Set(source.title.toLowerCase().split(/\s+/));
+  const candWords = candidate.title.toLowerCase().split(/\s+/);
+  const titleOverlap = candWords.filter((w) => srcWords.has(w)).length;
+  const titleMatchScore = Math.min(100, (titleOverlap / Math.max(1, srcWords.size)) * 100);
+
+  // Tag match
+  const srcTags = new Set((source.tags ?? []).map((t) => t.toLowerCase()));
+  const candTags = (candidate.tags ?? []).map((t) => t.toLowerCase());
+  const tagOverlap = candTags.filter((t) => srcTags.has(t)).length;
+  const tagScore = Math.min(15, tagOverlap * 5);
+
+  // Category match
+  const categoryScore = source.category && source.category === candidate.category ? 20 : 0;
+
+  // Engagement weight
+  const engagementWeight = Math.min(50,
+    ((candidate.viewCount * 0.001) + (candidate.likeCount * 0.01) + (candidate.commentCount * 0.05)) * 0.5
+  );
+
+  // Final formula
+  const finalScore =
+    (titleMatchScore * 1.0) +
+    (tagScore * 1.0) +
+    (categoryScore * 1.0) +
+    (engagementWeight * 1.0);
+
+  return {
+    titleMatchScore: round2(titleMatchScore),
+    tagScore: round2(tagScore),
+    categoryScore: round2(categoryScore),
+    engagementWeight: round2(engagementWeight),
+    finalScore: round2(finalScore),
+  };
+}
+
+// ─── 5. Open Trending Algorithm ─────────────────────────────────────────────
+
+export function computeTrendingScore(
+  viewCount: number,
+  likeCount: number,
+  commentCount: number,
+  createdAt: Date | string
+): number {
+  const hoursSinceUpload = Math.max(1,
+    (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60)
+  );
+  const score =
+    ((viewCount * 0.6) + (likeCount * 1.2) + (commentCount * 1.5)) /
+    Math.pow(hoursSinceUpload, 1.2);
+  return round2(score);
+}
+
+// ─── 6. Content DNA Profile ─────────────────────────────────────────────────
+
+export interface ContentDNA {
+  mood: string;
+  audienceType: string;
+  emotionalArc: string;
+  storytellingStyle: string;
+  energyLevel: string;
+}
+
+export async function analyzeContentDNA(
+  title: string,
+  description?: string | null,
+  transcript?: string | null,
+  tags?: string[] | null
+): Promise<ContentDNA> {
+  const prompt = `Analyze the "Content DNA" of this video — the fundamental traits that define its character.
+
+Title: "${title}"
+${description ? `Description: "${description.slice(0, 400)}"` : ""}
+${tags?.length ? `Tags: ${tags.join(", ")}` : ""}
+${transcript ? `Script (first 1500 chars): "${transcript.slice(0, 1500)}"` : ""}
+
+Generate:
+1. mood: One of: uplifting, dark, humorous, informative, inspirational, chill, intense, nostalgic, suspenseful
+2. audienceType: Who is this for? e.g., "tech enthusiasts", "casual gamers", "students", "parents"
+3. emotionalArc: The emotional journey. e.g., "curiosity → understanding → satisfaction", "tension → revelation → relief"
+4. storytellingStyle: One of: tutorial, narrative, documentary, vlog, listicle, review, debate, reaction, commentary
+5. energyLevel: One of: low, medium, high, explosive
+
+Return ONLY valid JSON.`;
+
+  try {
+    const raw = await pollinationsText({
+      prompt,
+      systemPrompt: "You analyze video content DNA. Return only valid JSON.",
+      jsonMode: true,
+    });
+    const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
+    const r = JSON.parse(cleaned);
+    return {
+      mood: String(r.mood || "informative"),
+      audienceType: String(r.audienceType || "general audience"),
+      emotionalArc: String(r.emotionalArc || "neutral"),
+      storytellingStyle: String(r.storytellingStyle || "commentary"),
+      energyLevel: String(r.energyLevel || "medium"),
+    };
+  } catch (err) {
+    console.error("Content DNA analysis failed:", err);
+    return { mood: "informative", audienceType: "general audience", emotionalArc: "neutral", storytellingStyle: "commentary", energyLevel: "medium" };
+  }
+}
+
+// ─── 7. Pre-Publish Risk Scanner ────────────────────────────────────────────
+
+export interface RiskScanResult {
+  nsfwScore: number;          // 0-1
+  copyrightProbability: number; // 0-1
+  controversyScore: number;     // 0-1
+  brandSafetyScore: number;     // 0-100
+  risks: string[];
+  canPublish: boolean;
+}
+
+export async function scanPublishRisks(
+  title: string,
+  description?: string | null,
+  transcript?: string | null,
+  tags?: string[] | null
+): Promise<RiskScanResult> {
+  const prompt = `You are a content safety and compliance AI. Analyze this video for pre-publish risks.
+
+Title: "${title}"
+${description ? `Description: "${description.slice(0, 500)}"` : ""}
+${tags?.length ? `Tags: ${tags.join(", ")}` : ""}
+${transcript ? `Script (first 2000 chars): "${transcript.slice(0, 2000)}"` : ""}
+
+Evaluate:
+1. nsfwScore (0.0-1.0): Probability of containing adult/explicit content.
+2. copyrightProbability (0.0-1.0): Risk of copyright claims (music, footage, trademarks).
+3. controversyScore (0.0-1.0): How controversial is the topic?
+4. brandSafetyScore (0-100): How safe for advertisers? (100 = completely safe)
+5. risks: Array of specific risk flags, if any.
+
+Return ONLY valid JSON.`;
+
+  try {
+    const raw = await pollinationsText({
+      prompt,
+      systemPrompt: "You evaluate content risk and safety. Be thorough but fair. Return only valid JSON.",
+      jsonMode: true,
+    });
+    const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
+    const r = JSON.parse(cleaned);
+    const nsfwScore = clamp(Number(r.nsfwScore) || 0, 0, 1);
+    return {
+      nsfwScore,
+      copyrightProbability: clamp(Number(r.copyrightProbability) || 0, 0, 1),
+      controversyScore: clamp(Number(r.controversyScore) || 0, 0, 1),
+      brandSafetyScore: clamp(Math.round(Number(r.brandSafetyScore) || 80), 0, 100),
+      risks: Array.isArray(r.risks) ? r.risks.filter((s: unknown): s is string => typeof s === "string").slice(0, 5) : [],
+      canPublish: nsfwScore < 0.8,
+    };
+  } catch (err) {
+    console.error("Risk scan failed:", err);
+    return { nsfwScore: 0, copyrightProbability: 0, controversyScore: 0, brandSafetyScore: 80, risks: [], canPublish: true };
+  }
+}
+
+// ─── 8. AI Auto-Clip Generator ──────────────────────────────────────────────
+
+export interface SuggestedClip {
+  startTime: number;   // seconds
+  endTime: number;     // seconds
+  hookStrength: number; // 0-100
+  caption: string;
+  verticalOptimized: boolean;
+}
+
+export async function generateAutoClips(
+  title: string,
+  transcript?: string | null,
+  duration?: number | null
+): Promise<SuggestedClip[]> {
+  const durationSec = duration ?? 600;
+  const prompt = `You are a Shorts/clip optimization AI. Identify the best 3-5 segments to extract as short-form vertical clips (15-60 seconds each).
+
+Video Title: "${title}"
+Duration: ${Math.floor(durationSec / 60)}m ${durationSec % 60}s
+${transcript ? `Transcript (first 3000 chars): "${transcript.slice(0, 3000)}"` : "No transcript available."}
+
+For each suggested clip, provide:
+- startTime: seconds from start
+- endTime: seconds from start
+- hookStrength: 0-100, how attention-grabbing the clip is
+- caption: A short engaging title for the clip
+- verticalOptimized: true if the content works well in 9:16 format
+
+Return ONLY a JSON array of 3-5 clip objects.`;
+
+  try {
+    const raw = await pollinationsText({
+      prompt,
+      systemPrompt: "You suggest optimal short-form clips from long videos. Return only valid JSON arrays.",
+      jsonMode: true,
+    });
+    const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
+    const clips = JSON.parse(cleaned);
+    if (Array.isArray(clips)) {
+      return clips.slice(0, 5).map((c: Record<string, unknown>) => ({
+        startTime: clamp(Number(c.startTime) || 0, 0, durationSec),
+        endTime: clamp(Number(c.endTime) || 60, 0, durationSec),
+        hookStrength: clamp(Number(c.hookStrength) || 50, 0, 100),
+        caption: String(c.caption || "Untitled Clip"),
+        verticalOptimized: typeof c.verticalOptimized === "boolean" ? c.verticalOptimized : true,
+      }));
+    }
+    return [];
+  } catch (err) {
+    console.error("Auto-clip generation failed:", err);
+    return [];
+  }
+}
+
+// ─── 9. Viral Simulation ────────────────────────────────────────────────────
+
+export interface ViralSimulationResult {
+  reach24h: number;
+  reach48h: number;
+  confidenceScore: number;  // 0-1
+  factors: string[];
+}
+
+export async function simulateViralReach(
+  title: string,
+  publishTime: string,
+  niche: string,
+  durationSeconds: number,
+  category?: string | null,
+  tags?: string[] | null
+): Promise<ViralSimulationResult> {
+  const prompt = `Simulate the viral reach potential for this video.
+
+Title: "${title}"
+Publish Time: ${publishTime}
+Niche: ${niche}
+Duration: ${Math.floor(durationSeconds / 60)}m ${durationSeconds % 60}s
+${category ? `Category: ${category}` : ""}
+${tags?.length ? `Tags: ${tags.join(", ")}` : ""}
+
+Based on platform dynamics, predict:
+1. reach24h: Estimated views in first 24 hours (realistic number)
+2. reach48h: Estimated views in first 48 hours
+3. confidenceScore: 0.0-1.0, how confident are you in this prediction?
+4. factors: Array of 3-5 key factors influencing the prediction
+
+Return ONLY valid JSON.`;
+
+  try {
+    const raw = await pollinationsText({
+      prompt,
+      systemPrompt: "You simulate viral reach based on content and timing. Be realistic. Return only valid JSON.",
+      jsonMode: true,
+    });
+    const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
+    const r = JSON.parse(cleaned);
+    return {
+      reach24h: Math.max(0, Math.round(Number(r.reach24h) || 500)),
+      reach48h: Math.max(0, Math.round(Number(r.reach48h) || 1200)),
+      confidenceScore: clamp(Number(r.confidenceScore) || 0.5, 0, 1),
+      factors: Array.isArray(r.factors) ? r.factors.filter((s: unknown): s is string => typeof s === "string").slice(0, 5) : [],
+    };
+  } catch (err) {
+    console.error("Viral simulation failed:", err);
+    return { reach24h: 500, reach48h: 1200, confidenceScore: 0.3, factors: [] };
+  }
+}
+
+// ─── 10. Revenue Prediction ─────────────────────────────────────────────────
+
+export interface RevenuePrediction {
+  estimatedCPM: number;
+  estimatedRevenuePer1k: number;
+  monetizationScore: number; // 0-100
+  breakdown: {
+    category: string;
+    brandSafety: string;
+    audienceValue: string;
+  };
+}
+
+export async function predictRevenue(
+  title: string,
+  category?: string | null,
+  tags?: string[] | null,
+  brandSafetyScore?: number | null,
+  engagementScore?: number | null
+): Promise<RevenuePrediction> {
+  const prompt = `Estimate the monetization potential for this video.
+
+Title: "${title}"
+Category: ${category || "Unknown"}
+${tags?.length ? `Tags: ${tags.join(", ")}` : ""}
+Brand Safety Score: ${brandSafetyScore ?? "unknown"}/100
+Engagement Prediction: ${engagementScore ?? "unknown"}%
+
+Estimate:
+1. estimatedCPM: Average CPM in USD (typically $1-$15 depending on niche)
+2. estimatedRevenuePer1k: Expected revenue per 1000 views ($)
+3. monetizationScore: 0-100, overall monetization attractiveness
+4. breakdown: { category: brief note on category CPM, brandSafety: safety assessment, audienceValue: audience purchasing power note }
+
+Return ONLY valid JSON.`;
+
+  try {
+    const raw = await pollinationsText({
+      prompt,
+      systemPrompt: "You predict video monetization. Be realistic with CPM estimates. Return only valid JSON.",
+      jsonMode: true,
+    });
+    const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
+    const r = JSON.parse(cleaned);
+    return {
+      estimatedCPM: clamp(Number(r.estimatedCPM) || 3, 0.5, 30),
+      estimatedRevenuePer1k: clamp(Number(r.estimatedRevenuePer1k) || 2, 0.1, 25),
+      monetizationScore: clamp(Math.round(Number(r.monetizationScore) || 50), 0, 100),
+      breakdown: {
+        category: String(r.breakdown?.category || "Standard category CPM"),
+        brandSafety: String(r.breakdown?.brandSafety || "Passed basic safety"),
+        audienceValue: String(r.breakdown?.audienceValue || "Average audience value"),
+      },
+    };
+  } catch (err) {
+    console.error("Revenue prediction failed:", err);
+    return {
+      estimatedCPM: 3,
+      estimatedRevenuePer1k: 2,
+      monetizationScore: 50,
+      breakdown: { category: "Unknown", brandSafety: "Unknown", audienceValue: "Unknown" },
+    };
+  }
+}
+
+// ─── Utility Helpers ─────────────────────────────────────────────────────────
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}

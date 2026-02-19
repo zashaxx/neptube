@@ -66,6 +66,22 @@ function TrendingFeed() {
         </p>
       </div>
 
+      {/* Open Trending Algorithm */}
+      <div className="p-4 rounded-xl bg-muted/50 border border-border/50 mb-2">
+        <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
+          <span className="text-orange-500">📐</span>
+          Open Trending Formula
+        </h3>
+        <code className="block text-xs font-mono bg-background/80 p-3 rounded-lg text-muted-foreground leading-relaxed">
+          score = ((views × 0.6) + (likes × 1.2) + (comments × 1.5)) / hours_since_upload^1.2
+        </code>
+        <p className="text-[11px] text-muted-foreground mt-2">
+          This is the exact formula used to rank trending videos. No hidden signals —
+          views, likes, comments, and recency are the only inputs. Newer content with
+          high engagement rises faster.
+        </p>
+      </div>
+
       <div className="space-y-4">
         {data.map((video, index) => (
           <Link

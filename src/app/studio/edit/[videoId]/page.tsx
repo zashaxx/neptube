@@ -34,6 +34,7 @@ import {
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { VideoAIPanel } from "@/components/video-ai-panel";
 
 const categories = [
   "Entertainment",
@@ -512,6 +513,9 @@ export default function EditVideoPage() {
               </Card>
             </div>
           </div>
+
+          {/* AI Analysis Panel */}
+          <VideoAIPanel videoId={videoId} />
 
           {/* Submit Button */}
           <div className="flex justify-end gap-3 pt-4 border-t">

@@ -31,6 +31,7 @@ import {
   Globe,
   Lock,
   Link as LinkIcon,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -89,12 +90,20 @@ export default function StudioPage() {
               </Link>
               <h1 className="text-xl font-bold tracking-tight gradient-text">Creator Studio</h1>
             </div>
-            <Link href="/studio/upload">
-              <Button className="gap-2 gradient-btn rounded-lg">
-                <Upload className="h-4 w-4" />
-                Upload Video
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/studio/ai-dashboard">
+                <Button variant="outline" className="gap-2 rounded-lg">
+                  <Sparkles className="h-4 w-4" />
+                  AI Dashboard
+                </Button>
+              </Link>
+              <Link href="/studio/upload">
+                <Button className="gap-2 gradient-btn rounded-lg">
+                  <Upload className="h-4 w-4" />
+                  Upload Video
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

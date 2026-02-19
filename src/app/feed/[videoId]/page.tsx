@@ -77,6 +77,7 @@ import {
 import { useAuth } from "@clerk/nextjs";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useMiniPlayer } from "@/components/mini-player";
+import { WhyRecommended } from "@/components/why-recommended";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -520,6 +521,7 @@ function RecommendationCard({
             {Math.round(video.relevanceScore * 100)}% match
           </Badge>
         )}
+        <WhyRecommended videoId={video.id} />
       </div>
     </Link>
   );
