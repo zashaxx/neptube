@@ -14,6 +14,7 @@ import {
   users,
 } from "@/db/schema";
 import { TRPCError } from "@trpc/server";
+import { analyzeToxicity, containsProfanity } from "@/lib/ai";
 
 export const youtubeRouter = createTRPCRouter({
   /**
@@ -100,7 +101,8 @@ export const youtubeRouter = createTRPCRouter({
         .where(
           and(
             eq(youtubeComments.youtubeVideoId, input.youtubeVideoId),
-            isNull(youtubeComments.parentId)
+            isNull(youtubeComments.parentId),
+            eq(youtubeComments.isHidden, false)
           )
         )
         .orderBy(desc(youtubeComments.createdAt))
@@ -143,6 +145,7 @@ export const youtubeRouter = createTRPCRouter({
 
   /**
    * Add a comment on a YouTube video (NepTube-native)
+   * Includes instant profanity filter + AI toxicity analysis
    */
   addComment: protectedProcedure
     .input(
@@ -153,6 +156,38 @@ export const youtubeRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // ── Step 1: Instant local profanity check (zero latency) ──
+      if (containsProfanity(input.content)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Your comment contains inappropriate language and has been blocked. Please keep the conversation respectful.",
+        });
+      }
+
+      // ── Step 2: AI toxicity analysis ──
+      let isToxic = false;
+      let toxicityScore = 0;
+      try {
+        const toxResult = await analyzeToxicity(input.content);
+        isToxic = toxResult.isToxic;
+        toxicityScore = toxResult.score;
+      } catch (err) {
+        console.error("Toxicity analysis failed, allowing comment:", err);
+      }
+
+      // Block severely toxic comments outright
+      if (toxicityScore >= 0.8) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Your comment was blocked because it contains toxic or hateful content. Please be respectful.",
+        });
+      }
+
+      // Auto-hide moderately toxic comments (reviewable by admin later)
+      const shouldHide = isToxic;
+
       const [newComment] = await ctx.db
         .insert(youtubeComments)
         .values({
@@ -160,6 +195,9 @@ export const youtubeRouter = createTRPCRouter({
           userId: ctx.user.id,
           content: input.content,
           parentId: input.parentId || null,
+          isToxic,
+          toxicityScore,
+          isHidden: shouldHide,
         })
         .returning();
 

@@ -1631,3 +1631,76 @@ function clamp(value: number, min: number, max: number): number {
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
+// ─── Instant Profanity / Bad-Word Filter ─────────────────────────────────────
+
+/**
+ * A comprehensive list of slurs, hate speech, and highly offensive terms.
+ * This runs instantly (no API call) and catches the most obvious abuse.
+ * Words are checked as whole-word matches to avoid false positives.
+ */
+const PROFANITY_LIST: string[] = [
+  // Common profanity / vulgar
+  "fuck", "fucker", "fucking", "fucked", "fck", "fuk", "fuc",
+  "shit", "shitty", "bullshit", "shitting",
+  "ass", "asshole", "arse", "arsehole",
+  "bitch", "bitches", "bitchy",
+  "damn", "dammit", "goddamn",
+  "bastard", "bastards",
+  "dick", "dickhead",
+  "cock", "cocksucker",
+  "cunt", "cunts",
+  "whore", "slut", "hoe",
+  "piss", "pissed",
+  "crap", "crappy",
+  // Hate speech / slurs
+  "nigger", "nigga", "n1gger", "n1gga",
+  "faggot", "fag", "fagg",
+  "retard", "retarded",
+  "tranny",
+  "chink", "gook", "wetback", "spic", "kike",
+  // Threats / violence
+  "kill yourself", "kys", "die", "go die",
+  "rape", "rapist",
+  // Harassment
+  "stfu", "gtfo", "lmfao", "idiot", "moron", "loser", "dumbass", "stupid",
+  "trash", "garbage", "pathetic", "worthless", "useless",
+  // Leet-speak / evasion variants
+  "f*ck", "f**k", "s**t", "sh*t", "b*tch", "a**hole", "a**",
+  "d!ck", "c0ck", "b!tch", "4ss",
+];
+
+/** Pre-build regex patterns for fast matching */
+const PROFANITY_PATTERNS: RegExp[] = PROFANITY_LIST.map((word) => {
+  // Escape special regex characters
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Match as a whole word (word boundary or start/end of string)
+  return new RegExp(`(?:^|\\b|\\s)${escaped}(?:\\b|\\s|$)`, "i");
+});
+
+/**
+ * Instantly checks if text contains profanity / hate speech.
+ * No API call — uses a local word list with regex matching.
+ * Also catches common leet-speak evasion patterns.
+ */
+export function containsProfanity(text: string): boolean {
+  // Normalize: lowercase, collapse repeated chars (e.g., fuuuck -> fuck)
+  const normalized = text
+    .toLowerCase()
+    .replace(/(.)\1{2,}/g, "$1$1") // Collapse 3+ repeated chars to 2
+    .replace(/[_\-\.]/g, "")       // Remove common separators used to evade
+    .replace(/0/g, "o")
+    .replace(/1/g, "i")
+    .replace(/3/g, "e")
+    .replace(/4/g, "a")
+    .replace(/5/g, "s")
+    .replace(/@/g, "a")
+    .replace(/\$/g, "s");
+
+  for (const pattern of PROFANITY_PATTERNS) {
+    if (pattern.test(normalized) || pattern.test(text)) {
+      return true;
+    }
+  }
+  return false;
+}

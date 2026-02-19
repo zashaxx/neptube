@@ -79,6 +79,9 @@ function YouTubeComment({
       utils.youtube.getCommentReplies.invalidate({ parentId: comment.id });
       utils.youtube.getCommentCount.invalidate({ youtubeVideoId: videoId });
     },
+    onError: (error) => {
+      alert(error.message || "Your reply could not be posted.");
+    },
   });
 
   const deleteComment = trpc.youtube.deleteComment.useMutation({
@@ -265,6 +268,9 @@ export default function YouTubeWatchPage() {
       setCommentText("");
       utils.youtube.getComments.invalidate({ youtubeVideoId: videoId });
       utils.youtube.getCommentCount.invalidate({ youtubeVideoId: videoId });
+    },
+    onError: (error) => {
+      alert(error.message || "Your comment could not be posted.");
     },
   });
 

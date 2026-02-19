@@ -446,6 +446,10 @@ export const youtubeComments = pgTable("youtube_comments", {
   content: text("content").notNull(),
   parentId: uuid("parent_id"),
   likeCount: integer("like_count").default(0).notNull(),
+  // AI moderation fields
+  isToxic: boolean("is_toxic").default(false).notNull(),
+  toxicityScore: real("toxicity_score").default(0),
+  isHidden: boolean("is_hidden").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
