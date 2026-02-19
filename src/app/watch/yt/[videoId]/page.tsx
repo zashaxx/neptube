@@ -7,18 +7,27 @@ import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import {
   ThumbsUp,
+  ThumbsDown,
   Eye,
   MessageCircle,
   ExternalLink,
   ArrowLeft,
   Share2,
   Check,
+  Bell,
+  BellOff,
+  Send,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
 import { useState, useCallback } from "react";
+import { useUser } from "@clerk/nextjs";
 
 function formatCount(count?: number | null): string {
   if (!count) return "0";
@@ -37,32 +46,264 @@ function parseDuration(iso: string): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+// ─── Comment Component ───────────────────────────────────────────────────────
+
+function YouTubeComment({
+  comment,
+  videoId,
+}: {
+  comment: {
+    id: string;
+    content: string;
+    likeCount: number;
+    createdAt: Date;
+    user: { id: string; name: string; imageURL: string };
+  };
+  videoId: string;
+}) {
+  const { user: clerkUser } = useUser();
+  const utils = trpc.useUtils();
+  const [showReplies, setShowReplies] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [showReplyInput, setShowReplyInput] = useState(false);
+
+  const { data: replies } = trpc.youtube.getCommentReplies.useQuery(
+    { parentId: comment.id },
+    { enabled: showReplies }
+  );
+
+  const addReply = trpc.youtube.addComment.useMutation({
+    onSuccess: () => {
+      setReplyText("");
+      setShowReplyInput(false);
+      utils.youtube.getCommentReplies.invalidate({ parentId: comment.id });
+      utils.youtube.getCommentCount.invalidate({ youtubeVideoId: videoId });
+    },
+  });
+
+  const deleteComment = trpc.youtube.deleteComment.useMutation({
+    onSuccess: () => {
+      utils.youtube.getComments.invalidate({ youtubeVideoId: videoId });
+      utils.youtube.getCommentCount.invalidate({ youtubeVideoId: videoId });
+    },
+  });
+
+  return (
+    <div className="flex gap-3">
+      <Avatar className="h-8 w-8 flex-shrink-0">
+        <AvatarImage src={comment.user.imageURL} />
+        <AvatarFallback className="text-xs">
+          {comment.user.name[0]?.toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{comment.user.name}</span>
+          <span className="text-xs text-muted-foreground">
+            {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+          </span>
+        </div>
+        <p className="text-sm mt-1 whitespace-pre-wrap">{comment.content}</p>
+        <div className="flex items-center gap-3 mt-2">
+          <button
+            onClick={() => setShowReplyInput(!showReplyInput)}
+            className="text-xs text-muted-foreground hover:text-foreground transition"
+          >
+            Reply
+          </button>
+          {clerkUser && (
+            <button
+              onClick={() => deleteComment.mutate({ commentId: comment.id })}
+              className="text-xs text-muted-foreground hover:text-red-500 transition"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
+          <button
+            onClick={() => setShowReplies(!showReplies)}
+            className="text-xs text-primary flex items-center gap-1"
+          >
+            {showReplies ? (
+              <>
+                <ChevronUp className="h-3 w-3" /> Hide replies
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3 w-3" /> View replies
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Reply input */}
+        {showReplyInput && (
+          <div className="mt-3 flex gap-2">
+            <Textarea
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder="Write a reply..."
+              className="min-h-[60px] text-sm resize-none"
+            />
+            <Button
+              size="sm"
+              disabled={!replyText.trim() || addReply.isPending}
+              onClick={() =>
+                addReply.mutate({
+                  youtubeVideoId: videoId,
+                  content: replyText.trim(),
+                  parentId: comment.id,
+                })
+              }
+            >
+              <Send className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
+        {/* Replies */}
+        {showReplies && replies && replies.length > 0 && (
+          <div className="mt-3 space-y-3 pl-2 border-l-2 border-border/50">
+            {replies.map((reply) => (
+              <div key={reply.id} className="flex gap-2">
+                <Avatar className="h-6 w-6 flex-shrink-0">
+                  <AvatarImage src={reply.user.imageURL} />
+                  <AvatarFallback className="text-[10px]">
+                    {reply.user.name[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium">{reply.user.name}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <p className="text-xs mt-0.5">{reply.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
 export default function YouTubeWatchPage() {
   const params = useParams();
   const router = useRouter();
+  const { user: clerkUser } = useUser();
   const videoId = params.videoId as string;
   const [copied, setCopied] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const utils = trpc.useUtils();
+
+  // ── Data fetches ──────────────────────────────────────────────────────────
 
   const { data: video, isLoading } = trpc.youtube.getById.useQuery(
     { id: videoId },
     { enabled: !!videoId }
   );
 
-  // Get related videos (search by title keywords)
+  // Related videos
   const searchQuery = video?.title?.split(" ").slice(0, 3).join(" ") || "";
   const { data: relatedData } = trpc.youtube.search.useQuery(
     { query: searchQuery, maxResults: 8 },
     { enabled: !!searchQuery }
   );
-
   const relatedVideos = (relatedData?.videos ?? []).filter((v) => v.id !== videoId);
 
+  // NepTube-native interactions
+  const { data: likeStatus } = trpc.youtube.getLikeStatus.useQuery(
+    { youtubeVideoId: videoId },
+    { enabled: !!videoId && !!clerkUser }
+  );
+
+  const { data: likeCounts } = trpc.youtube.getLikeCounts.useQuery(
+    { youtubeVideoId: videoId },
+    { enabled: !!videoId }
+  );
+
+  const { data: subStatus } = trpc.youtube.getSubscriptionStatus.useQuery(
+    { youtubeChannelId: video?.channelId || "" },
+    { enabled: !!video?.channelId && !!clerkUser }
+  );
+
+  const { data: ytComments, isLoading: commentsLoading } =
+    trpc.youtube.getComments.useQuery(
+      { youtubeVideoId: videoId },
+      { enabled: !!videoId }
+    );
+
+  const { data: commentCountData } = trpc.youtube.getCommentCount.useQuery(
+    { youtubeVideoId: videoId },
+    { enabled: !!videoId }
+  );
+
+  // ── Mutations ─────────────────────────────────────────────────────────────
+
+  const toggleLike = trpc.youtube.toggleLike.useMutation({
+    onSuccess: () => {
+      utils.youtube.getLikeStatus.invalidate({ youtubeVideoId: videoId });
+      utils.youtube.getLikeCounts.invalidate({ youtubeVideoId: videoId });
+    },
+  });
+
+  const toggleSubscribe = trpc.youtube.toggleSubscribe.useMutation({
+    onSuccess: () => {
+      utils.youtube.getSubscriptionStatus.invalidate({
+        youtubeChannelId: video?.channelId || "",
+      });
+    },
+  });
+
+  const addComment = trpc.youtube.addComment.useMutation({
+    onSuccess: () => {
+      setCommentText("");
+      utils.youtube.getComments.invalidate({ youtubeVideoId: videoId });
+      utils.youtube.getCommentCount.invalidate({ youtubeVideoId: videoId });
+    },
+  });
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   const handleCopyLink = useCallback(() => {
-    navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${videoId}`);
+    navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [videoId]);
+  }, []);
+
+  const handleLike = useCallback(() => {
+    if (!clerkUser) return;
+    toggleLike.mutate({ youtubeVideoId: videoId, isLike: true });
+  }, [clerkUser, videoId, toggleLike]);
+
+  const handleDislike = useCallback(() => {
+    if (!clerkUser) return;
+    toggleLike.mutate({ youtubeVideoId: videoId, isLike: false });
+  }, [clerkUser, videoId, toggleLike]);
+
+  const handleSubscribe = useCallback(() => {
+    if (!clerkUser || !video) return;
+    toggleSubscribe.mutate({
+      youtubeChannelId: video.channelId,
+      youtubeChannelTitle: video.channelTitle,
+      youtubeChannelThumbnail: video.channelThumbnail,
+    });
+  }, [clerkUser, video, toggleSubscribe]);
+
+  const handleAddComment = useCallback(() => {
+    if (!commentText.trim()) return;
+    addComment.mutate({
+      youtubeVideoId: videoId,
+      content: commentText.trim(),
+    });
+  }, [commentText, videoId, addComment]);
+
+  // ── Loading state ─────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -90,7 +331,11 @@ export default function YouTubeWatchPage() {
         <p className="text-muted-foreground mb-4">
           This YouTube video could not be loaded. The API key may not be configured.
         </p>
-        <Button onClick={() => router.push("/feed")} variant="outline" className="gap-2">
+        <Button
+          onClick={() => router.push("/feed")}
+          variant="outline"
+          className="gap-2"
+        >
           <ArrowLeft className="h-4 w-4" />
           Back to Feed
         </Button>
@@ -98,10 +343,15 @@ export default function YouTubeWatchPage() {
     );
   }
 
+  const neptubeLikes = likeCounts?.likeCount ?? 0;
+  const neptubeDislikes = likeCounts?.dislikeCount ?? 0;
+  const totalLikes = (video.likeCount ?? 0) + neptubeLikes;
+  const neptubeCommentCount = commentCountData?.count ?? 0;
+
   return (
     <div className="max-w-[1400px] mx-auto p-4 lg:p-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
+        {/* ── Main Content ────────────────────────────────────────────────── */}
         <div className="lg:col-span-2 space-y-4">
           {/* Back button */}
           <Button
@@ -130,12 +380,8 @@ export default function YouTubeWatchPage() {
             <h1 className="text-xl font-bold leading-tight">{video.title}</h1>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              {/* Channel info */}
-              <Link
-                href={`https://www.youtube.com/channel/${video.channelId}`}
-                target="_blank"
-                className="flex items-center gap-3 hover:opacity-80 transition"
-              >
+              {/* Channel info + Subscribe */}
+              <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={video.channelThumbnail} />
                   <AvatarFallback className="bg-red-500/10 text-red-500 font-semibold">
@@ -143,36 +389,100 @@ export default function YouTubeWatchPage() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-semibold text-sm flex items-center gap-1.5">
-                    {video.channelTitle}
-                    <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                  </p>
+                  <p className="font-semibold text-sm">{video.channelTitle}</p>
                   <p className="text-xs text-muted-foreground">YouTube Channel</p>
                 </div>
-              </Link>
+
+                {/* Subscribe Button */}
+                <Button
+                  variant={subStatus?.subscribed ? "outline" : "default"}
+                  size="sm"
+                  className={`gap-1.5 ml-2 ${
+                    subStatus?.subscribed
+                      ? "border-primary/30 text-muted-foreground"
+                      : "bg-primary text-primary-foreground"
+                  }`}
+                  onClick={handleSubscribe}
+                  disabled={!clerkUser || toggleSubscribe.isPending}
+                >
+                  {subStatus?.subscribed ? (
+                    <>
+                      <BellOff className="h-3.5 w-3.5" />
+                      Subscribed
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="h-3.5 w-3.5" />
+                      Subscribe
+                    </>
+                  )}
+                </Button>
+              </div>
 
               {/* Action buttons */}
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-muted/50 rounded-lg px-3 py-2">
-                  <ThumbsUp className="h-4 w-4" />
-                  <span className="text-sm font-medium">{formatCount(video.likeCount)}</span>
+                {/* Like / Dislike pill */}
+                <div className="flex items-center bg-muted/50 rounded-lg overflow-hidden">
+                  <button
+                    onClick={handleLike}
+                    disabled={!clerkUser || toggleLike.isPending}
+                    className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${
+                      likeStatus?.isLiked
+                        ? "text-blue-500 bg-blue-500/10"
+                        : "hover:bg-muted"
+                    }`}
+                  >
+                    <ThumbsUp
+                      className={`h-4 w-4 ${likeStatus?.isLiked ? "fill-blue-500" : ""}`}
+                    />
+                    <span className="text-sm font-medium">{formatCount(totalLikes)}</span>
+                  </button>
+                  <div className="w-px h-6 bg-border" />
+                  <button
+                    onClick={handleDislike}
+                    disabled={!clerkUser || toggleLike.isPending}
+                    className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${
+                      likeStatus?.isDisliked
+                        ? "text-red-500 bg-red-500/10"
+                        : "hover:bg-muted"
+                    }`}
+                  >
+                    <ThumbsDown
+                      className={`h-4 w-4 ${likeStatus?.isDisliked ? "fill-red-500" : ""}`}
+                    />
+                    {neptubeDislikes > 0 && (
+                      <span className="text-sm font-medium">
+                        {formatCount(neptubeDislikes)}
+                      </span>
+                    )}
+                  </button>
                 </div>
 
+                {/* Share */}
                 <Button
                   variant="outline"
                   size="sm"
                   className="gap-1.5"
                   onClick={handleCopyLink}
                 >
-                  {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+                  {copied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Share2 className="h-4 w-4" />
+                  )}
                   {copied ? "Copied!" : "Share"}
                 </Button>
 
+                {/* View on YouTube */}
                 <Link
                   href={`https://www.youtube.com/watch?v=${videoId}`}
                   target="_blank"
                 >
-                  <Button variant="outline" size="sm" className="gap-1.5 text-red-500 border-red-500/30 hover:bg-red-500/10">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-red-500 border-red-500/30 hover:bg-red-500/10"
+                  >
                     <ExternalLink className="h-4 w-4" />
                     YouTube
                   </Button>
@@ -188,10 +498,14 @@ export default function YouTubeWatchPage() {
               </span>
               <span className="flex items-center gap-1.5">
                 <MessageCircle className="h-4 w-4" />
-                {formatCount(video.commentCount)} comments
+                {neptubeCommentCount > 0
+                  ? `${neptubeCommentCount} NepTube comments`
+                  : `${formatCount(video.commentCount)} YouTube comments`}
               </span>
               <span>
-                {formatDistanceToNow(new Date(video.publishedAt), { addSuffix: true })}
+                {formatDistanceToNow(new Date(video.publishedAt), {
+                  addSuffix: true,
+                })}
               </span>
               <span>{parseDuration(video.duration)}</span>
             </div>
@@ -230,24 +544,106 @@ export default function YouTubeWatchPage() {
               </div>
             )}
 
-            {/* Comments notice */}
-            <div className="glass-card rounded-xl p-6 text-center">
-              <MessageCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                Comments are available on YouTube.{" "}
-                <Link
-                  href={`https://www.youtube.com/watch?v=${videoId}`}
-                  target="_blank"
-                  className="text-red-500 hover:underline font-medium"
-                >
-                  View on YouTube →
-                </Link>
-              </p>
+            {/* ── NepTube Comments Section ──────────────────────────────── */}
+            <div className="space-y-4 pt-2">
+              <h2 className="font-semibold text-base flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                Comments
+                {neptubeCommentCount > 0 && (
+                  <span className="text-sm text-muted-foreground font-normal">
+                    ({neptubeCommentCount})
+                  </span>
+                )}
+              </h2>
+
+              {/* Add comment */}
+              {clerkUser ? (
+                <div className="flex gap-3">
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarImage src={clerkUser.imageUrl} />
+                    <AvatarFallback className="text-xs">
+                      {clerkUser.firstName?.[0]?.toUpperCase() ?? "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-2">
+                    <Textarea
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Add a comment..."
+                      className="min-h-[70px] text-sm resize-none"
+                    />
+                    <div className="flex justify-end gap-2">
+                      {commentText && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCommentText("")}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        disabled={!commentText.trim() || addComment.isPending}
+                        onClick={handleAddComment}
+                        className="gap-1.5"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        Comment
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="glass-card rounded-xl p-4 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    <Link
+                      href="/sign-in"
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Sign in
+                    </Link>{" "}
+                    to leave a comment
+                  </p>
+                </div>
+              )}
+
+              {/* Comment list */}
+              {commentsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex gap-3">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : ytComments && ytComments.length > 0 ? (
+                <div className="space-y-4">
+                  {ytComments.map((comment) => (
+                    <YouTubeComment
+                      key={comment.id}
+                      comment={comment}
+                      videoId={videoId}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="glass-card rounded-xl p-6 text-center">
+                  <MessageCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                  <p className="text-sm text-muted-foreground">
+                    No NepTube comments yet. Be the first to share your thoughts!
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Sidebar — Related Videos */}
+        {/* ── Sidebar — Related Videos ──────────────────────────────────── */}
         <div className="space-y-4">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
             Related Videos
@@ -274,7 +670,9 @@ export default function YouTubeWatchPage() {
                   <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
                     {rv.title}
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-1">{rv.channelTitle}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {rv.channelTitle}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {formatCount(rv.viewCount)} views
                   </p>

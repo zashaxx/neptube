@@ -434,6 +434,53 @@ export const viralSimulations = pgTable("viral_simulations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// ─── YouTube Interactions (NepTube-native features for YouTube videos) ───────
+
+// Comments on YouTube videos by NepTube users
+export const youtubeComments = pgTable("youtube_comments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  youtubeVideoId: text("youtube_video_id").notNull(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  parentId: uuid("parent_id"),
+  likeCount: integer("like_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Like/dislike on YouTube videos by NepTube users
+export const youtubeVideoLikes = pgTable(
+  "youtube_video_likes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    youtubeVideoId: text("youtube_video_id").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    isLike: boolean("is_like").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("yt_likes_user_video_idx").on(t.userId, t.youtubeVideoId)]
+);
+
+// Subscribe to YouTube channels within NepTube
+export const youtubeSubscriptions = pgTable(
+  "youtube_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    youtubeChannelId: text("youtube_channel_id").notNull(),
+    youtubeChannelTitle: text("youtube_channel_title").notNull(),
+    youtubeChannelThumbnail: text("youtube_channel_thumbnail"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("yt_subs_user_channel_idx").on(t.userId, t.youtubeChannelId)]
+);
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -654,5 +701,33 @@ export const viralSimulationsRelations = relations(viralSimulations, ({ one }) =
   video: one(videos, {
     fields: [viralSimulations.videoId],
     references: [videos.id],
+  }),
+}));
+
+// YouTube interaction relations
+export const youtubeCommentsRelations = relations(youtubeComments, ({ one, many }) => ({
+  user: one(users, {
+    fields: [youtubeComments.userId],
+    references: [users.id],
+  }),
+  parent: one(youtubeComments, {
+    fields: [youtubeComments.parentId],
+    references: [youtubeComments.id],
+    relationName: "ytReplies",
+  }),
+  replies: many(youtubeComments, { relationName: "ytReplies" }),
+}));
+
+export const youtubeVideoLikesRelations = relations(youtubeVideoLikes, ({ one }) => ({
+  user: one(users, {
+    fields: [youtubeVideoLikes.userId],
+    references: [users.id],
+  }),
+}));
+
+export const youtubeSubscriptionsRelations = relations(youtubeSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [youtubeSubscriptions.userId],
+    references: [users.id],
   }),
 }));
