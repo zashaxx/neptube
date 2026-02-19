@@ -351,3 +351,26 @@
 .dark .noise-overlay::before {
   opacity: 0.035;
 }
+
+/* Keyboard shortcut overlay fade */
+@keyframes fade-in-out {
+  0% { opacity: 0; transform: scale(0.8); }
+  20% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.95); }
+}
+
+.animate-fade-in {
+  animation: fade-in-out 0.8s ease-in-out forwards;
+}
+
+/* Watch progress bar on thumbnails */
+.progress-bar-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: hsl(var(--primary));
+  border-radius: 0 2px 0 0;
+  z-index: 10;
+}

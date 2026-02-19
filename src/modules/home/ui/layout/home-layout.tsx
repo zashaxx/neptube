@@ -1,6 +1,7 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { HomeNavbar } from "../components/home-navbar";
 import { HomeSidebar } from "../components/home-sidebar";
+import { MiniPlayerProvider } from "@/components/mini-player";
 
 interface HomeLayoutProps {
   children: React.ReactNode;
@@ -9,17 +10,19 @@ interface HomeLayoutProps {
 export const HomeLayout = ({ children }: HomeLayoutProps) => {
   return (
     <SidebarProvider>
-      <div className="w-full noise-overlay">
-        {/* Aurora gradient background */}
-        <div className="aurora-bg" />
-        <HomeNavbar/>
-        <div className="flex min-h-screen pt-14">
-          <HomeSidebar/>
-            <main className="flex-1 overflow-y-auto">
-                {children}
-            </main>
-          </div>
-      </div>
+      <MiniPlayerProvider>
+        <div className="w-full noise-overlay">
+          {/* Aurora gradient background */}
+          <div className="aurora-bg" />
+          <HomeNavbar/>
+          <div className="flex min-h-screen pt-14">
+            <HomeSidebar/>
+              <main className="flex-1 overflow-y-auto">
+                  {children}
+              </main>
+            </div>
+        </div>
+      </MiniPlayerProvider>
     </SidebarProvider>
   );
 };

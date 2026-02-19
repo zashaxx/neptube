@@ -106,6 +106,7 @@ export const videos = pgTable("videos", {
   isNsfw: boolean("is_nsfw").default(false),
   isShort: boolean("is_short").default(false),
   allowDownload: boolean("allow_download").default(true),
+  publishAt: timestamp("publish_at"), // Scheduled publish date
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -318,6 +319,23 @@ export const communityPostLikes = pgTable(
   (t) => [uniqueIndex("community_post_likes_user_post_idx").on(t.userId, t.postId)]
 );
 
+// Video feedback table (not interested, etc.)
+export const videoFeedback = pgTable(
+  "video_feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    videoId: uuid("video_id")
+      .notNull()
+      .references(() => videos.id, { onDelete: "cascade" }),
+    type: text("type").notNull(), // "not_interested", "dont_recommend_channel"
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("video_feedback_user_video_idx").on(t.userId, t.videoId)]
+);
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -483,5 +501,16 @@ export const communityPostLikesRelations = relations(communityPostLikes, ({ one 
   post: one(communityPosts, {
     fields: [communityPostLikes.postId],
     references: [communityPosts.id],
+  }),
+}));
+
+export const videoFeedbackRelations = relations(videoFeedback, ({ one }) => ({
+  user: one(users, {
+    fields: [videoFeedback.userId],
+    references: [users.id],
+  }),
+  video: one(videos, {
+    fields: [videoFeedback.videoId],
+    references: [videos.id],
   }),
 }));

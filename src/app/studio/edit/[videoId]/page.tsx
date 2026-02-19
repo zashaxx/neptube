@@ -30,6 +30,8 @@ import {
   FileText,
   RefreshCw,
   AlertTriangle,
+  CalendarClock,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -58,6 +60,7 @@ export default function EditVideoPage() {
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const [publishAt, setPublishAt] = useState<string>("");
 
   const utils = trpc.useUtils();
 
@@ -90,6 +93,11 @@ export default function EditVideoPage() {
       setCategory(video.category || "");
       setVisibility(video.visibility);
       setThumbnailUrl(video.thumbnailURL || "");
+      if (video.publishAt) {
+        // Format as local datetime-local value
+        const dt = new Date(video.publishAt);
+        setPublishAt(dt.toISOString().slice(0, 16));
+      }
     }
   }, [video]);
 
@@ -141,6 +149,7 @@ export default function EditVideoPage() {
         category: category || undefined,
         visibility,
         thumbnailURL: thumbnailUrl || undefined,
+        publishAt: publishAt ? new Date(publishAt).toISOString() : null,
       });
     } catch (error) {
       console.error("Error updating video:", error);
@@ -251,6 +260,39 @@ export default function EditVideoPage() {
                     <SelectItem value="private">Private - Only you can watch</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Schedule Publishing */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <CalendarClock className="h-4 w-4" />
+                  Schedule
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="datetime-local"
+                    value={publishAt}
+                    onChange={(e) => setPublishAt(e.target.value)}
+                    min={new Date().toISOString().slice(0, 16)}
+                    className="flex-1"
+                  />
+                  {publishAt && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0"
+                      onClick={() => setPublishAt("")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {publishAt
+                    ? `Will publish on ${new Date(publishAt).toLocaleString()}`
+                    : "Leave empty to publish immediately"}
+                </p>
               </div>
             </div>
 

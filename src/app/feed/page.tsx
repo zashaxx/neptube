@@ -6,11 +6,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { Eye, Upload, Search, Loader2, Sparkles, TrendingUp, ExternalLink, Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Upload, Search, Loader2, Sparkles, TrendingUp, ExternalLink, Play, ChevronLeft, ChevronRight, MoreVertical, EyeOff, Ban, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@clerk/nextjs";
 import { YouTubeVideoCard, YouTubeVideoCardSkeleton } from "@/components/youtube-video-card";
+import { toast } from "sonner";
 
 function formatViewCount(count: number): string {
   if (count >= 1000000) {
@@ -21,7 +28,7 @@ function formatViewCount(count: number): string {
   return `${count} views`;
 }
 
-function VideoCard({ video }: { video: {
+function VideoCard({ video, onDismiss }: { video: {
   id: string;
   title: string;
   thumbnailURL: string | null;
@@ -34,9 +41,32 @@ function VideoCard({ video }: { video: {
     name: string;
     imageURL: string;
   };
-}}) {
+}; onDismiss?: (videoId: string) => void }) {
   return (
-    <Link href={`/feed/${video.id}`} className="group">
+    <div className="relative group">
+    {/* 3-dot menu */}
+    {onDismiss && (
+      <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="h-7 w-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors">
+              <MoreVertical className="h-3.5 w-3.5 text-white" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDismiss(video.id); }}>
+              <EyeOff className="h-4 w-4 mr-2" />
+              Not interested
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDismiss(video.id); }}>
+              <Ban className="h-4 w-4 mr-2" />
+              Don&apos;t recommend channel
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    )}
+    <Link href={`/feed/${video.id}`}>
       {/* Thumbnail — locked to 16:9 */}
       <div className="relative w-full rounded-xl overflow-hidden mb-3" style={{ aspectRatio: '16/9' }}>
         {video.isNsfw && (
@@ -96,6 +126,7 @@ function VideoCard({ video }: { video: {
         </div>
       </div>
     </Link>
+    </div>
   );
 }
 
@@ -256,11 +287,39 @@ function FeedPage() {
   const ytVideos = searchQuery ? (ytSearch?.videos ?? []) : (ytTrending?.videos ?? []);
   const ytLoading = searchQuery ? ytSearchLoading : ytTrendingLoading;
 
+  // ─── Not Interested filtering ─────────────────────────────────
+  const { data: dismissedIds } = trpc.feedback.getDismissedVideoIds.useQuery(
+    undefined,
+    { enabled: !!isSignedIn }
+  );
+  const dismissedSet = new Set((dismissedIds ?? []).map((d) => d.videoId));
+
+  const utils = trpc.useUtils();
+  const notInterested = trpc.feedback.notInterested.useMutation({
+    onSuccess: () => utils.feedback.getDismissedVideoIds.invalidate(),
+  });
+  const undoNotInterested = trpc.feedback.undoNotInterested.useMutation({
+    onSuccess: () => utils.feedback.getDismissedVideoIds.invalidate(),
+  });
+
+  const handleDismiss = (videoId: string) => {
+    notInterested.mutate({ videoId });
+    toast("Video hidden from feed", {
+      action: {
+        label: "Undo",
+        onClick: () => undoNotInterested.mutate({ videoId }),
+      },
+      icon: <Undo2 className="h-4 w-4" />,
+      duration: 5000,
+    });
+  };
+
   const allVideos = (() => {
     const flat = data?.pages.flatMap((page) => page.items) ?? [];
     const seen = new Set<string>();
     return flat.filter((v) => {
       if (seen.has(v.id)) return false;
+      if (dismissedSet.has(v.id)) return false;
       seen.add(v.id);
       return true;
     });
@@ -364,9 +423,9 @@ function FeedPage() {
           </div>
         ) : personalizedData && personalizedData.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">
-            {personalizedData.map((video) => (
+            {personalizedData.filter((v) => !dismissedSet.has(v.id)).map((video) => (
               <div key={video.id} className="card-animate">
-                <VideoCard video={video} />
+                <VideoCard video={video} onDismiss={handleDismiss} />
               </div>
             ))}
           </div>
@@ -450,7 +509,7 @@ function FeedPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">
             {allVideos.slice(0, 4).map((video) => (
               <div key={video.id} className="card-animate">
-                <VideoCard video={video} />
+                <VideoCard video={video} onDismiss={isSignedIn ? handleDismiss : undefined} />
               </div>
             ))}
           </div>
@@ -467,7 +526,7 @@ function FeedPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">
               {allVideos.slice(4).map((video) => (
                 <div key={video.id} className="card-animate">
-                  <VideoCard video={video} />
+                  <VideoCard video={video} onDismiss={isSignedIn ? handleDismiss : undefined} />
                 </div>
               ))}
             </div>

@@ -6,6 +6,7 @@ import { TRPCProvider } from "@/trpc/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { BannedCheck } from "@/components/banned-check";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -65,6 +66,7 @@ export default function RootLayout({
                   <div className="flex min-h-screen">
                     <main className="flex-1">{children}</main>
                   </div>
+                  <Toaster richColors position="bottom-right" />
                 </BannedCheck>
               </SidebarProvider>
             </TRPCProvider>

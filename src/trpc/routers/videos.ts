@@ -504,15 +504,19 @@ export const videosRouter = createTRPCRouter({
         thumbnailURL: z.string().url().optional(),
         videoURL: z.string().url().optional(),
         visibility: z.enum(["public", "private", "unlisted"]).optional(),
+        publishAt: z.string().datetime().nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...data } = input;
+      const { id, publishAt, ...data } = input;
 
       const updated = await ctx.db
         .update(videos)
         .set({
           ...data,
+          ...(publishAt !== undefined
+            ? { publishAt: publishAt ? new Date(publishAt) : null }
+            : {}),
           updatedAt: new Date(),
         })
         .where(and(eq(videos.id, id), eq(videos.userId, ctx.user.id)))

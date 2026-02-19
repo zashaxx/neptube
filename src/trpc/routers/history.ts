@@ -112,4 +112,66 @@ export const historyRouter = createTRPCRouter({
         );
       return { success: true };
     }),
+
+  // Get watch progress for a specific video (for resume)
+  getWatchProgress: protectedProcedure
+    .input(z.object({ videoId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const entry = await ctx.db
+        .select({
+          watchDuration: watchHistory.watchDuration,
+          watchedAt: watchHistory.watchedAt,
+        })
+        .from(watchHistory)
+        .where(
+          and(
+            eq(watchHistory.userId, ctx.user.id),
+            eq(watchHistory.videoId, input.videoId)
+          )
+        )
+        .orderBy(desc(watchHistory.watchedAt))
+        .limit(1);
+
+      return entry[0] ?? null;
+    }),
+
+  // Update watch progress (lightweight, called periodically)
+  updateProgress: protectedProcedure
+    .input(
+      z.object({
+        videoId: z.string().uuid(),
+        watchDuration: z.number().int().min(0),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db
+        .select({ id: watchHistory.id })
+        .from(watchHistory)
+        .where(
+          and(
+            eq(watchHistory.userId, ctx.user.id),
+            eq(watchHistory.videoId, input.videoId)
+          )
+        )
+        .orderBy(desc(watchHistory.watchedAt))
+        .limit(1);
+
+      if (existing[0]) {
+        await ctx.db
+          .update(watchHistory)
+          .set({
+            watchDuration: input.watchDuration,
+            watchedAt: new Date(),
+          })
+          .where(eq(watchHistory.id, existing[0].id));
+      } else {
+        await ctx.db.insert(watchHistory).values({
+          userId: ctx.user.id,
+          videoId: input.videoId,
+          watchDuration: input.watchDuration,
+        });
+      }
+
+      return { success: true };
+    }),
 });

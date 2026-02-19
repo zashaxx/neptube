@@ -44,6 +44,14 @@ import {
   Download,
   BookmarkPlus,
   BookmarkCheck,
+  Maximize,
+  Minimize,
+  Code2,
+  Keyboard,
+  Reply,
+  ChevronRight,
+  Captions,
+  CaptionsOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,12 +75,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@clerk/nextjs";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { useMiniPlayer } from "@/components/mini-player";
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
 
 function formatViewCount(count: number): string {
   if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
   if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
   return count.toString();
 }
+
+function formatTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+// ─── Sentiment & Emotion Badges ─────────────────────────────────────────
 
 function SentimentBadge({
   sentiment,
@@ -130,6 +152,155 @@ function EmotionBadge({ emotion }: { emotion: string | null }) {
     </span>
   );
 }
+
+// ─── Comment Reply Thread ───────────────────────────────────────────────
+
+function CommentReplies({
+  parentId,
+  videoId,
+}: {
+  parentId: string;
+  videoId: string;
+}) {
+  const [showReplies, setShowReplies] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const utils = trpc.useUtils();
+
+  const { data: replies, isLoading } = trpc.comments.getReplies.useQuery(
+    { parentId, limit: 10 },
+    { enabled: showReplies }
+  );
+
+  const createReply = trpc.comments.create.useMutation({
+    onSuccess: () => {
+      setReplyContent("");
+      setShowReplyForm(false);
+      utils.comments.getReplies.invalidate({ parentId });
+      utils.comments.getByVideo.invalidate({ videoId });
+    },
+  });
+
+  const handleReplySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyContent.trim()) return;
+    createReply.mutate({
+      videoId,
+      content: replyContent.trim(),
+      parentId,
+    });
+  };
+
+  return (
+    <div className="mt-1">
+      <div className="flex items-center gap-2">
+        {/* Reply button */}
+        {!showReplyForm && (
+          <button
+            onClick={() => setShowReplyForm(true)}
+            className="text-[10px] text-muted-foreground hover:text-foreground"
+          >
+            Reply
+          </button>
+        )}
+
+        {/* Toggle replies */}
+        <button
+          onClick={() => setShowReplies(!showReplies)}
+          className="text-[11px] text-primary font-medium flex items-center gap-1 hover:underline"
+        >
+          <ChevronRight
+            className={`h-3 w-3 transition-transform ${showReplies ? "rotate-90" : ""}`}
+          />
+          {showReplies ? "Hide replies" : "View replies"}
+        </button>
+      </div>
+
+      {/* Reply form */}
+      {showReplyForm && (
+        <form onSubmit={handleReplySubmit} className="mt-2 ml-2">
+          <Textarea
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            placeholder="Add a reply..."
+            className="min-h-[60px] text-sm rounded-lg resize-none"
+            maxLength={2000}
+          />
+          <div className="flex justify-end gap-2 mt-1.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowReplyForm(false);
+                setReplyContent("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!replyContent.trim() || createReply.isPending}
+              className="gap-1 rounded-lg"
+            >
+              <Reply className="h-3 w-3" />
+              {createReply.isPending ? "Posting..." : "Reply"}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {/* Replies list */}
+      {showReplies && (
+        <div className="mt-2 ml-2 space-y-3 border-l-2 border-primary/10 pl-3">
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Loading replies...
+            </div>
+          ) : replies && replies.length > 0 ? (
+            replies.map((reply) => (
+              <div key={reply.id} className="flex gap-2">
+                <Avatar className="h-6 w-6 rounded-md flex-shrink-0">
+                  <AvatarImage src={reply.user.imageURL} />
+                  <AvatarFallback className="rounded-md bg-primary/10 text-primary text-[10px]">
+                    {reply.user.name[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[11px] font-medium">
+                      {reply.user.name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatDistanceToNow(new Date(reply.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-foreground/90 leading-relaxed">
+                    {reply.content}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <button className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1">
+                      <ThumbsUp className="h-2.5 w-2.5" />
+                      {reply.likeCount > 0 ? reply.likeCount : ""}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-[11px] text-muted-foreground">No replies yet.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Comment Section (threaded) ─────────────────────────────────────────
 
 function CommentSection({ videoId }: { videoId: string }) {
   const [content, setContent] = useState("");
@@ -247,29 +418,16 @@ function CommentSection({ videoId }: { videoId: string }) {
                     {comment.likeCount > 0 ? comment.likeCount : ""}
                   </button>
                   <button
-                    className="text-[10px] text-muted-foreground hover:text-foreground"
-                    onClick={() => {
-                      if (replyingTo === comment.id) {
-                        setReplyingTo(null);
-                        setReplySuggestions([]);
-                      } else {
-                        setReplyingTo(comment.id);
-                        setReplySuggestions([]);
-                      }
-                    }}
-                  >
-                    Reply
-                  </button>
-                  <button
                     className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1"
                     onClick={async () => {
                       setReplyingTo(comment.id);
                       setReplySuggestions([]);
                       try {
-                        const result = await utils.client.comments.getReplySuggestions.query({
-                          commentId: comment.id,
-                          videoId,
-                        });
+                        const result =
+                          await utils.client.comments.getReplySuggestions.query({
+                            commentId: comment.id,
+                            videoId,
+                          });
                         setReplySuggestions(result.suggestions);
                       } catch {
                         setReplySuggestions([]);
@@ -280,6 +438,8 @@ function CommentSection({ videoId }: { videoId: string }) {
                     AI Reply
                   </button>
                 </div>
+
+                {/* AI Reply Suggestions */}
                 {replyingTo === comment.id && replySuggestions.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {replySuggestions.map((suggestion, i) => (
@@ -297,6 +457,9 @@ function CommentSection({ videoId }: { videoId: string }) {
                     ))}
                   </div>
                 )}
+
+                {/* Threaded Replies */}
+                <CommentReplies parentId={comment.id} videoId={videoId} />
               </div>
             </div>
           ))}
@@ -305,6 +468,8 @@ function CommentSection({ videoId }: { videoId: string }) {
     </div>
   );
 }
+
+// ─── Recommendation Card ────────────────────────────────────────────────
 
 function RecommendationCard({
   video,
@@ -360,6 +525,107 @@ function RecommendationCard({
   );
 }
 
+// ─── Chapter Progress Bar ───────────────────────────────────────────────
+
+function ChapterProgressBar({
+  chapters,
+  currentTime,
+  duration,
+  onSeek,
+}: {
+  chapters: { time: number; title: string }[];
+  currentTime: number;
+  duration: number;
+  onSeek: (time: number) => void;
+}) {
+  if (!chapters.length || !duration) return null;
+
+  return (
+    <div className="relative w-full h-1.5 bg-muted rounded-full mt-1 group/progress cursor-pointer">
+      {/* Progress fill */}
+      <div
+        className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all"
+        style={{ width: `${(currentTime / duration) * 100}%` }}
+      />
+
+      {/* Chapter markers */}
+      {chapters.map((chapter, i) => {
+        const pos = (chapter.time / duration) * 100;
+        return (
+          <button
+            key={i}
+            className="absolute top-1/2 -translate-y-1/2 w-1 h-3 bg-white/80 rounded-full hover:h-4 hover:bg-white transition-all z-10"
+            style={{ left: `${pos}%` }}
+            onClick={() => onSeek(chapter.time)}
+            title={`${formatTime(chapter.time)} — ${chapter.title}`}
+          />
+        );
+      })}
+
+      {/* Click to seek */}
+      <div
+        className="absolute inset-0"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const percent = (e.clientX - rect.left) / rect.width;
+          onSeek(percent * duration);
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── Keyboard Shortcuts Modal ───────────────────────────────────────────
+
+function ShortcutsHelpDialog() {
+  const shortcuts = [
+    { key: "Space / K", desc: "Play / Pause" },
+    { key: "F", desc: "Toggle fullscreen" },
+    { key: "M", desc: "Toggle mute" },
+    { key: "J", desc: "Rewind 10s" },
+    { key: "L", desc: "Forward 10s" },
+    { key: "←/→", desc: "Seek ±5s" },
+    { key: "↑/↓", desc: "Volume ±10%" },
+    { key: "T", desc: "Theater mode" },
+    { key: "I", desc: "Mini player" },
+    { key: "0-9", desc: "Seek to 0%-90%" },
+  ];
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="gap-1.5 rounded-lg">
+          <Keyboard className="h-4 w-4" />
+          <span className="hidden sm:inline">Shortcuts</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Keyboard className="h-5 w-5" />
+            Keyboard Shortcuts
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2">
+          {shortcuts.map((s) => (
+            <div
+              key={s.key}
+              className="flex items-center justify-between text-sm"
+            >
+              <span className="text-muted-foreground">{s.desc}</span>
+              <kbd className="px-2 py-0.5 rounded bg-muted text-xs font-mono">
+                {s.key}
+              </kbd>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Main Video Page ────────────────────────────────────────────────────
+
 export default function VideoPage() {
   const params = useParams();
   const videoId = params.videoId as string;
@@ -376,8 +642,17 @@ export default function VideoPage() {
   const [playlistOpen, setPlaylistOpen] = useState(false);
   const [selectedPlaylist, setSelectedPlaylist] = useState("");
   const [isPiPActive, setIsPiPActive] = useState(false);
+  const [theaterMode, setTheaterMode] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [shareTimestamp, setShareTimestamp] = useState(false);
+  const [captionsEnabled, setCaptionsEnabled] = useState(true);
   const { isSignedIn } = useAuth();
   const utils = trpc.useUtils();
+  const { openMiniPlayer } = useMiniPlayer();
+  const progressSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ─── Queries ──────────────────────────────────────────────────────
 
   const {
     data: video,
@@ -421,15 +696,27 @@ export default function VideoPage() {
     { enabled: !!videoId && showCommentSummary }
   );
 
+  // Watch progress (resume)
+  const { data: watchProgress } = trpc.history.getWatchProgress.useQuery(
+    { videoId },
+    { enabled: !!isSignedIn && !!videoId }
+  );
+
   // Generate subtitle data URL from WebVTT content
   const subtitleDataUrl = video?.subtitlesVTT
     ? `data:text/vtt;charset=utf-8,${encodeURIComponent(video.subtitlesVTT)}`
     : null;
 
+  // ─── Mutations ────────────────────────────────────────────────────
+
   const toggleSub = trpc.subscriptions.toggle.useMutation({
     onSuccess: () => {
-      utils.subscriptions.isSubscribed.invalidate({ channelId: video?.user?.id ?? "" });
-      utils.subscriptions.getCount.invalidate({ channelId: video?.user?.id ?? "" });
+      utils.subscriptions.isSubscribed.invalidate({
+        channelId: video?.user?.id ?? "",
+      });
+      utils.subscriptions.getCount.invalidate({
+        channelId: video?.user?.id ?? "",
+      });
     },
   });
 
@@ -453,9 +740,12 @@ export default function VideoPage() {
   });
 
   const addToHistory = trpc.history.addToHistory.useMutation();
-
+  const updateProgress = trpc.history.updateProgress.useMutation();
   const incrementViews = trpc.videos.incrementViews.useMutation();
 
+  // ─── Effects ──────────────────────────────────────────────────────
+
+  // Increment views + add to history
   useEffect(() => {
     if (videoId) {
       incrementViews.mutate({ id: videoId });
@@ -466,18 +756,112 @@ export default function VideoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, isSignedIn]);
 
-  const handleShare = () => {
-    const url = window.location.href;
+  // Resume from watch progress
+  useEffect(() => {
+    if (
+      watchProgress?.watchDuration &&
+      watchProgress.watchDuration > 5 &&
+      videoRef.current
+    ) {
+      const vid = videoRef.current;
+      const resumeTime = watchProgress.watchDuration;
+      const handler = () => {
+        if (resumeTime && vid.duration && resumeTime < vid.duration - 10) {
+          vid.currentTime = resumeTime;
+        }
+        vid.removeEventListener("loadedmetadata", handler);
+      };
+      if (vid.readyState >= 1) {
+        handler();
+      } else {
+        vid.addEventListener("loadedmetadata", handler);
+      }
+    }
+  }, [watchProgress]);
+
+  // Periodic progress save (every 10 seconds while playing)
+  useEffect(() => {
+    if (!isSignedIn || !videoId) return;
+
+    const saveProgress = () => {
+      const vid = videoRef.current;
+      if (vid && !vid.paused && vid.currentTime > 0) {
+        updateProgress.mutate({
+          videoId,
+          watchDuration: Math.floor(vid.currentTime),
+        });
+      }
+    };
+
+    progressSaveRef.current = setInterval(saveProgress, 10000);
+
+    return () => {
+      if (progressSaveRef.current) {
+        clearInterval(progressSaveRef.current);
+      }
+      saveProgress();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoId, isSignedIn]);
+
+  // Track video time for chapters/progress bar
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    const handleTimeUpdate = () => setCurrentTime(vid.currentTime);
+    const handleDurationChange = () => setVideoDuration(vid.duration);
+
+    vid.addEventListener("timeupdate", handleTimeUpdate);
+    vid.addEventListener("durationchange", handleDurationChange);
+    vid.addEventListener("loadedmetadata", handleDurationChange);
+
+    return () => {
+      vid.removeEventListener("timeupdate", handleTimeUpdate);
+      vid.removeEventListener("durationchange", handleDurationChange);
+      vid.removeEventListener("loadedmetadata", handleDurationChange);
+    };
+  }, [video?.videoURL]);
+
+  // ─── Keyboard Shortcuts ───────────────────────────────────────────
+
+  const { showOverlay } = useKeyboardShortcuts({
+    videoRef,
+    onToggleTheater: () => setTheaterMode((prev) => !prev),
+    onToggleMiniPlayer: () => {
+      if (video?.videoURL) {
+        openMiniPlayer({
+          id: videoId,
+          title: video.title,
+          videoURL: video.videoURL,
+          thumbnailURL: video.thumbnailURL,
+          currentTime: videoRef.current?.currentTime ?? 0,
+        });
+      }
+    },
+  });
+
+  // ─── Callbacks ────────────────────────────────────────────────────
+
+  const handleShare = useCallback(() => {
+    let url = typeof window !== "undefined" ? window.location.href : "";
+    if (shareTimestamp && currentTime > 0) {
+      const baseUrl = url.split("?")[0];
+      url = `${baseUrl}?t=${Math.floor(currentTime)}`;
+    }
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
+  }, [shareTimestamp, currentTime]);
 
-  const formatChapterTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
+  const getEmbedCode = useCallback(() => {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    let embedUrl = `${baseUrl}/embed/${videoId}`;
+    if (shareTimestamp && currentTime > 0) {
+      embedUrl += `?t=${Math.floor(currentTime)}`;
+    }
+    return `<iframe width="560" height="315" src="${embedUrl}" frameborder="0" allowfullscreen></iframe>`;
+  }, [videoId, shareTimestamp, currentTime]);
 
   const seekToChapter = useCallback((time: number) => {
     const el = videoRef.current;
@@ -514,6 +898,35 @@ export default function VideoPage() {
     a.click();
     document.body.removeChild(a);
   }, [video?.videoURL, video?.title]);
+
+  const toggleCaptions = useCallback(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    const track = vid.textTracks[0];
+    if (track) {
+      if (captionsEnabled) {
+        track.mode = "hidden";
+        setCaptionsEnabled(false);
+      } else {
+        track.mode = "showing";
+        setCaptionsEnabled(true);
+      }
+    }
+  }, [captionsEnabled]);
+
+  const handleMiniPlayer = useCallback(() => {
+    if (video?.videoURL) {
+      openMiniPlayer({
+        id: videoId,
+        title: video.title,
+        videoURL: video.videoURL,
+        thumbnailURL: video.thumbnailURL,
+        currentTime: videoRef.current?.currentTime ?? 0,
+      });
+    }
+  }, [video, videoId, openMiniPlayer]);
+
+  // ─── Loading / Error ──────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -554,9 +967,21 @@ export default function VideoPage() {
     );
   }
 
+  // ─── Render ───────────────────────────────────────────────────────
+
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+    <div
+      className={`mx-auto p-4 transition-all duration-300 ${
+        theaterMode ? "max-w-full" : "max-w-6xl"
+      }`}
+    >
+      <div
+        className={`grid gap-6 ${
+          theaterMode
+            ? "grid-cols-1"
+            : "grid-cols-1 lg:grid-cols-[1fr_340px]"
+        }`}
+      >
         {/* Main content */}
         <div className="space-y-5">
           {/* NSFW Warning */}
@@ -575,15 +1000,31 @@ export default function VideoPage() {
           )}
 
           {/* Video Player */}
-          <div className="w-full bg-black rounded-xl overflow-hidden relative group/player">
+          <div
+            className={`w-full bg-black rounded-xl overflow-hidden relative group/player ${
+              theaterMode ? "max-h-[85vh]" : ""
+            }`}
+          >
             <div className="absolute -inset-[1px] rounded-xl bg-gradient-to-r from-primary/0 via-primary/0 to-primary/0 group-hover/player:from-primary/30 group-hover/player:via-transparent group-hover/player:to-[hsl(190,80%,50%)]/30 transition-all duration-700 pointer-events-none z-20" />
+
+            {/* Keyboard shortcut overlay */}
+            {showOverlay && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+                <div className="bg-black/70 text-white text-lg font-semibold px-6 py-3 rounded-xl animate-fade-in">
+                  {showOverlay}
+                </div>
+              </div>
+            )}
+
             {video.videoURL ? (
               <video
                 ref={videoRef}
                 src={video.videoURL}
                 controls
                 autoPlay
-                className="w-full aspect-video object-contain bg-black relative z-10"
+                className={`w-full object-contain bg-black relative z-10 ${
+                  theaterMode ? "max-h-[85vh] aspect-auto" : "aspect-video"
+                }`}
                 poster={video.thumbnailURL || undefined}
                 crossOrigin="anonymous"
               >
@@ -593,7 +1034,7 @@ export default function VideoPage() {
                     src={subtitleDataUrl}
                     srcLang={video.language || "en"}
                     label={video.languageName || "English"}
-                    default
+                    default={captionsEnabled}
                   />
                 )}
               </video>
@@ -604,10 +1045,28 @@ export default function VideoPage() {
             )}
           </div>
 
+          {/* Chapter progress bar (below video) */}
+          {video.chapters && video.chapters.length > 0 && (
+            <ChapterProgressBar
+              chapters={video.chapters}
+              currentTime={currentTime}
+              duration={videoDuration}
+              onSeek={seekToChapter}
+            />
+          )}
+
+          {/* Resume indicator */}
+          {watchProgress?.watchDuration &&
+            watchProgress.watchDuration > 5 &&
+            currentTime < 3 && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                <Clock className="h-4 w-4 text-primary" />
+                Resuming from {formatTime(watchProgress.watchDuration)}
+              </div>
+            )}
+
           {/* Title */}
-          <h1 className="text-xl font-bold tracking-tight">
-            {video.title}
-          </h1>
+          <h1 className="text-xl font-bold tracking-tight">{video.title}</h1>
 
           {/* AI Tags */}
           {video.tags && video.tags.length > 0 && (
@@ -625,31 +1084,29 @@ export default function VideoPage() {
             </div>
           )}
 
-          {/* ML Metadata Row: Language, Keywords, Quality */}
+          {/* ML Metadata Row */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Language */}
             {video.languageName && (
               <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border bg-blue-500/5 text-blue-600 border-blue-500/15">
                 <Globe className="h-3 w-3" />
                 {video.languageName}
               </span>
             )}
-
-            {/* Quality Score */}
-            {video.qualityScore !== null && video.qualityScore !== undefined && (
-              <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border ${
-                video.qualityScore >= 70
-                  ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/15"
-                  : video.qualityScore >= 40
-                    ? "bg-yellow-500/5 text-yellow-600 border-yellow-500/15"
-                    : "bg-red-500/5 text-red-600 border-red-500/15"
-              }`}>
-                <BarChart3 className="h-3 w-3" />
-                Quality: {video.qualityScore}/100
-              </span>
-            )}
-
-            {/* Keywords */}
+            {video.qualityScore !== null &&
+              video.qualityScore !== undefined && (
+                <span
+                  className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md border ${
+                    video.qualityScore >= 70
+                      ? "bg-emerald-500/5 text-emerald-600 border-emerald-500/15"
+                      : video.qualityScore >= 40
+                        ? "bg-yellow-500/5 text-yellow-600 border-yellow-500/15"
+                        : "bg-red-500/5 text-red-600 border-red-500/15"
+                  }`}
+                >
+                  <BarChart3 className="h-3 w-3" />
+                  Quality: {video.qualityScore}/100
+                </span>
+              )}
             {video.keywords && video.keywords.length > 0 && (
               <div className="flex flex-wrap items-center gap-1">
                 <Key className="h-3 w-3 text-muted-foreground/60" />
@@ -679,12 +1136,14 @@ export default function VideoPage() {
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-1.5 rounded-lg"
-                onClick={() => isSignedIn && likeVideo.mutate({ videoId, isLike: true })}
+                onClick={() =>
+                  isSignedIn && likeVideo.mutate({ videoId, isLike: true })
+                }
               >
                 <ThumbsUp className="h-4 w-4" />
                 {formatViewCount(video.likeCount)}
@@ -693,16 +1152,22 @@ export default function VideoPage() {
                 variant="outline"
                 size="sm"
                 className="gap-1.5 rounded-lg"
-                onClick={() => isSignedIn && likeVideo.mutate({ videoId, isLike: false })}
+                onClick={() =>
+                  isSignedIn && likeVideo.mutate({ videoId, isLike: false })
+                }
               >
                 <ThumbsDown className="h-4 w-4" />
                 {formatViewCount(video.dislikeCount)}
               </Button>
 
-              {/* Share Dialog */}
+              {/* Enhanced Share Dialog */}
               <Dialog open={shareOpen} onOpenChange={setShareOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-1.5 rounded-lg">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 rounded-lg"
+                  >
                     <Share2 className="h-4 w-4" />
                     Share
                   </Button>
@@ -710,27 +1175,90 @@ export default function VideoPage() {
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle>Share video</DialogTitle>
-                    <DialogDescription>Copy the link to share this video.</DialogDescription>
+                    <DialogDescription>
+                      Share or embed this video.
+                    </DialogDescription>
                   </DialogHeader>
+
+                  {/* Timestamp toggle */}
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={shareTimestamp}
+                      onChange={(e) => setShareTimestamp(e.target.checked)}
+                      className="rounded"
+                    />
+                    Start at{" "}
+                    <span className="font-mono text-primary">
+                      {formatTime(currentTime)}
+                    </span>
+                  </label>
+
+                  {/* Copy link */}
                   <div className="flex items-center gap-2">
                     <input
                       readOnly
-                      value={typeof window !== "undefined" ? window.location.href : ""}
+                      value={
+                        typeof window !== "undefined"
+                          ? shareTimestamp && currentTime > 0
+                            ? `${window.location.href.split("?")[0]}?t=${Math.floor(currentTime)}`
+                            : window.location.href
+                          : ""
+                      }
                       className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-muted"
                     />
-                    <Button size="sm" onClick={handleShare} className="gap-1.5 rounded-lg">
-                      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    <Button
+                      size="sm"
+                      onClick={handleShare}
+                      className="gap-1.5 rounded-lg"
+                    >
+                      {copied ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
                       {copied ? "Copied!" : "Copy"}
                     </Button>
+                  </div>
+
+                  {/* Embed code */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium flex items-center gap-1.5">
+                      <Code2 className="h-4 w-4" />
+                      Embed
+                    </label>
+                    <div className="relative">
+                      <textarea
+                        readOnly
+                        value={getEmbedCode()}
+                        className="w-full px-3 py-2 border border-border rounded-lg text-xs bg-muted font-mono h-16 resize-none"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="absolute top-1 right-1 h-7 px-2"
+                        onClick={() => {
+                          navigator.clipboard.writeText(getEmbedCode());
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
 
-              {/* Add to Playlist */}
+              {/* Save to Playlist */}
               {isSignedIn && (
                 <Dialog open={playlistOpen} onOpenChange={setPlaylistOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-1.5 rounded-lg">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 rounded-lg"
+                    >
                       <ListPlus className="h-4 w-4" />
                       Save
                     </Button>
@@ -741,7 +1269,10 @@ export default function VideoPage() {
                     </DialogHeader>
                     {myPlaylists && myPlaylists.length > 0 ? (
                       <div className="space-y-3">
-                        <Select value={selectedPlaylist} onValueChange={setSelectedPlaylist}>
+                        <Select
+                          value={selectedPlaylist}
+                          onValueChange={setSelectedPlaylist}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Choose a playlist" />
                           </SelectTrigger>
@@ -765,13 +1296,18 @@ export default function VideoPage() {
                             }
                           }}
                         >
-                          {addToPlaylist.isPending ? "Saving..." : "Add to Playlist"}
+                          {addToPlaylist.isPending
+                            ? "Saving..."
+                            : "Add to Playlist"}
                         </Button>
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-4">
                         No playlists yet.{" "}
-                        <Link href="/playlists" className="text-primary hover:underline">
+                        <Link
+                          href="/playlists"
+                          className="text-primary hover:underline"
+                        >
                           Create one
                         </Link>
                       </p>
@@ -784,7 +1320,11 @@ export default function VideoPage() {
               {isSignedIn && (
                 <Dialog open={reportOpen} onOpenChange={setReportOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-1.5 rounded-lg">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 rounded-lg"
+                    >
                       <Flag className="h-4 w-4" />
                       Report
                     </Button>
@@ -792,19 +1332,36 @@ export default function VideoPage() {
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Report video</DialogTitle>
-                      <DialogDescription>Help us understand the issue.</DialogDescription>
+                      <DialogDescription>
+                        Help us understand the issue.
+                      </DialogDescription>
                     </DialogHeader>
-                    <Select value={reportReason} onValueChange={setReportReason}>
+                    <Select
+                      value={reportReason}
+                      onValueChange={setReportReason}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a reason" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Spam or misleading">Spam or misleading</SelectItem>
-                        <SelectItem value="Hateful or abusive content">Hateful or abusive</SelectItem>
-                        <SelectItem value="Harmful or dangerous acts">Harmful content</SelectItem>
-                        <SelectItem value="Sexual content">Sexual content</SelectItem>
-                        <SelectItem value="Child safety">Child safety</SelectItem>
-                        <SelectItem value="Copyright violation">Copyright violation</SelectItem>
+                        <SelectItem value="Spam or misleading">
+                          Spam or misleading
+                        </SelectItem>
+                        <SelectItem value="Hateful or abusive content">
+                          Hateful or abusive
+                        </SelectItem>
+                        <SelectItem value="Harmful or dangerous acts">
+                          Harmful content
+                        </SelectItem>
+                        <SelectItem value="Sexual content">
+                          Sexual content
+                        </SelectItem>
+                        <SelectItem value="Child safety">
+                          Child safety
+                        </SelectItem>
+                        <SelectItem value="Copyright violation">
+                          Copyright violation
+                        </SelectItem>
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -815,7 +1372,10 @@ export default function VideoPage() {
                       className="min-h-[80px]"
                     />
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setReportOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setReportOpen(false)}
+                      >
                         Cancel
                       </Button>
                       <Button
@@ -829,7 +1389,9 @@ export default function VideoPage() {
                           });
                         }}
                       >
-                        {createReport.isPending ? "Submitting..." : "Submit Report"}
+                        {createReport.isPending
+                          ? "Submitting..."
+                          : "Submit Report"}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -854,7 +1416,50 @@ export default function VideoPage() {
                 </Button>
               )}
 
-              {/* Picture-in-Picture */}
+              {/* Subtitles/CC Toggle */}
+              {subtitleDataUrl && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 rounded-lg"
+                  onClick={toggleCaptions}
+                >
+                  {captionsEnabled ? (
+                    <Captions className="h-4 w-4 text-primary" />
+                  ) : (
+                    <CaptionsOff className="h-4 w-4" />
+                  )}
+                  CC
+                </Button>
+              )}
+
+              {/* Theater Mode */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 rounded-lg"
+                onClick={() => setTheaterMode(!theaterMode)}
+              >
+                {theaterMode ? (
+                  <Minimize className="h-4 w-4" />
+                ) : (
+                  <Maximize className="h-4 w-4" />
+                )}
+                {theaterMode ? "Default" : "Theater"}
+              </Button>
+
+              {/* Mini Player */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 rounded-lg"
+                onClick={handleMiniPlayer}
+              >
+                <PictureInPicture2 className="h-4 w-4" />
+                Mini
+              </Button>
+
+              {/* PiP */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -877,6 +1482,9 @@ export default function VideoPage() {
                   Download
                 </Button>
               )}
+
+              {/* Keyboard Shortcuts */}
+              <ShortcutsHelpDialog />
             </div>
           </div>
 
@@ -908,7 +1516,9 @@ export default function VideoPage() {
                     size="sm"
                     className="rounded-lg"
                     variant={isSubscribed ? "outline" : "default"}
-                    onClick={() => toggleSub.mutate({ channelId: video.user.id })}
+                    onClick={() =>
+                      toggleSub.mutate({ channelId: video.user.id })
+                    }
                     disabled={toggleSub.isPending}
                   >
                     {isSubscribed ? "Subscribed" : "Subscribe"}
@@ -971,18 +1581,40 @@ export default function VideoPage() {
               </button>
               {showChapters && (
                 <div className="px-4 pb-4 space-y-1.5">
-                  {video.chapters.map((chapter, i) => (
-                    <button
-                      key={i}
-                      onClick={() => seekToChapter(chapter.time)}
-                      className="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-primary/10 cursor-pointer transition-colors w-full text-left"
-                    >
-                      <span className="text-xs font-mono text-primary min-w-[40px]">
-                        {formatChapterTime(chapter.time)}
-                      </span>
-                      <span className="text-sm">{chapter.title}</span>
-                    </button>
-                  ))}
+                  {video.chapters.map((chapter, i) => {
+                    const nextChapterTime =
+                      video.chapters && i < video.chapters.length - 1
+                        ? video.chapters[i + 1].time
+                        : videoDuration;
+                    const isCurrentChapter =
+                      currentTime >= chapter.time &&
+                      currentTime < nextChapterTime;
+
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => seekToChapter(chapter.time)}
+                        className={`flex items-center gap-3 py-1.5 px-2 rounded-md cursor-pointer transition-colors w-full text-left ${
+                          isCurrentChapter
+                            ? "bg-primary/15 text-primary"
+                            : "hover:bg-primary/10"
+                        }`}
+                      >
+                        <span className="text-xs font-mono min-w-[40px]">
+                          {formatTime(chapter.time)}
+                        </span>
+                        <span className="text-sm">{chapter.title}</span>
+                        {isCurrentChapter && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] px-1.5 py-0 ml-auto"
+                          >
+                            Now
+                          </Badge>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1059,7 +1691,9 @@ export default function VideoPage() {
         </div>
 
         {/* Sidebar — Recommendations */}
-        <aside className="space-y-4">
+        <aside
+          className={`space-y-4 ${theaterMode ? "max-w-md mx-auto" : ""}`}
+        >
           <h3 className="font-semibold text-sm flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
             Recommended for you
