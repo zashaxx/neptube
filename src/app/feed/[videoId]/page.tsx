@@ -309,10 +309,12 @@ function CommentSection({ videoId }: { videoId: string }) {
   const [replySuggestions, setReplySuggestions] = useState<string[]>([]);
   const utils = trpc.useUtils();
 
-  const { data: comments, isLoading } = trpc.comments.getByVideo.useQuery({
-    videoId,
-    limit: 30,
-  });
+  const { data: comments, isLoading } = trpc.comments.getByVideo.useQuery(
+    { videoId },
+    {
+      staleTime: 60_000, // 1 minute
+    }
+  );
 
   const createComment = trpc.comments.create.useMutation({
     onSuccess: () => {
@@ -629,6 +631,8 @@ function ShortcutsHelpDialog() {
 // ─── Main Video Page ────────────────────────────────────────────────────
 
 export default function VideoPage() {
+  // All hooks must be called at the top
+  const { data: currentUser } = trpc.users.me.useQuery(undefined, { staleTime: 60_000 });
   const params = useParams();
   const videoId = params.videoId as string;
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -654,13 +658,27 @@ export default function VideoPage() {
   const { openMiniPlayer } = useMiniPlayer();
   const progressSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Helper: treat admins as premium
+  const isAdmin = currentUser?.role === "admin";
+  // If you want to use premium gating, use this:
+  // const isPremium = isAdmin || currentUser?.subscriptionTier === "premium" || currentUser?.subscriptionTier === "vip";
+
   // ─── Queries ──────────────────────────────────────────────────────
 
   const {
-    data: video,
-    isLoading,
+    data: videoData,
+    isLoading: videoLoading,
+    isFetching: videoFetching,
     error,
-  } = trpc.videos.getById.useQuery({ id: videoId }, { enabled: !!videoId });
+  } = trpc.videos.getById.useQuery(
+    { id: videoId },
+    {
+      staleTime: 60_000, // 1 minute
+    }
+  );
+
+  // Always use video = videoData for all usages below
+  const video = videoData;
 
   const { data: recommendations } = trpc.videos.getRecommendations.useQuery(
     { videoId, limit: 6 },
@@ -939,7 +957,7 @@ export default function VideoPage() {
 
   // ─── Loading / Error ──────────────────────────────────────────────
 
-  if (isLoading) {
+  if (videoLoading) {
     return (
       <div className="max-w-5xl mx-auto p-4 space-y-4">
         <Skeleton className="aspect-video w-full rounded-xl" />
@@ -956,7 +974,29 @@ export default function VideoPage() {
     );
   }
 
-  if (error || !video) {
+  if (videoFetching) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <h1 className="text-xl font-semibold mb-2">Video not found</h1>
+        <p className="text-muted-foreground text-sm mb-4">
+          This video may have been removed or doesn&apos;t exist.
+        </p>
+        {error && (
+          <p className="text-red-500 text-xs mb-4 max-w-md text-center font-mono bg-red-500/5 border border-red-500/20 rounded-lg p-3">
+            Error: {error.message}
+          </p>
+        )}
+        <Link href="/feed">
+          <Button variant="outline" className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Feed
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  if (error || !videoData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <h1 className="text-xl font-semibold mb-2">Video not found</h1>
@@ -979,6 +1019,9 @@ export default function VideoPage() {
   }
 
   // ─── Render ───────────────────────────────────────────────────────
+
+  // If video is not loaded, don't render video-dependent UI
+  if (!video) return null;
 
   return (
     <div
@@ -1146,8 +1189,13 @@ export default function VideoPage() {
                 })}
               </span>
             </div>
-
             <div className="flex items-center gap-1 flex-wrap">
+                            <Link href="/premium">
+                              <Button className="gap-1.5 rounded-lg bg-gradient-to-r from-yellow-400 via-pink-500 to-red-500 text-white font-semibold shadow-md hover:from-yellow-500 hover:to-pink-600 transition-colors">
+                                <span role="img" aria-label="star">⭐</span>
+                                Go Premium
+                              </Button>
+                            </Link>
               <Button
                 variant={likeStatus?.isLike === true ? "default" : "outline"}
                 size="sm"

@@ -13,6 +13,33 @@ import {
 import { relations } from "drizzle-orm";
 
 // Enums
+export const subscriptionTierEnum = pgEnum("subscription_tier", [
+  "free",
+  "lite",
+  "premium",
+  "vip",
+]);
+
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "pending",
+  "completed",
+  "failed",
+  "refunded",
+]);
+
+export const paymentGatewayEnum = pgEnum("payment_gateway", [
+  "esewa",
+  "khalti",
+  "stripe",
+  "paypal",
+]);
+
+export const downloadStatusEnum = pgEnum("download_status", [
+  "pending",
+  "ready",
+  "expired",
+]);
+
 export const userRoleEnum = pgEnum("user_role", ["user", "admin", "moderator"]);
 export const videoVisibilityEnum = pgEnum("video_visibility", [
   "public",
@@ -72,6 +99,11 @@ export const users = pgTable(
     role: userRoleEnum("role").default("user").notNull(),
     isBanned: boolean("is_banned").default(false).notNull(),
     banReason: text("ban_reason"),
+    // Premium subscription fields
+    subscriptionTier: subscriptionTierEnum("subscription_tier").default("free").notNull(),
+    subscriptionExpiry: timestamp("subscription_expiry"),
+    lastPaymentAt: timestamp("last_payment_at"),
+    premiumBadge: boolean("premium_badge").default(false).notNull(),
   },
   (t) => [uniqueIndex("clerk_id_idx").on(t.clerkId)]
 );
@@ -106,6 +138,12 @@ export const videos = pgTable("videos", {
   isNsfw: boolean("is_nsfw").default(false),
   isShort: boolean("is_short").default(false),
   allowDownload: boolean("allow_download").default(true),
+  // Premium content flags
+  isPremiumOnly: boolean("is_premium_only").default(false),
+  isVipOnly: boolean("is_vip_only").default(false),
+  isExclusiveContent: boolean("is_exclusive_content").default(false),
+  earlyAccessUntil: timestamp("early_access_until"), // VIP early access window
+  maxQualityFree: text("max_quality_free").default("480p"), // Max quality for free users
   publishAt: timestamp("publish_at"), // Scheduled publish date
   // AI Retention & Drop-off prediction
   predictedRetentionCurve: jsonb("predicted_retention_curve").$type<number[]>(),
@@ -485,6 +523,97 @@ export const youtubeSubscriptions = pgTable(
   (t) => [uniqueIndex("yt_subs_user_channel_idx").on(t.userId, t.youtubeChannelId)]
 );
 
+// ─── Premium Subscriptions ──────────────────────────────────────────────────
+
+// User Premium Subscriptions
+export const premiumSubscriptions = pgTable("premium_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  tier: subscriptionTierEnum("tier").default("free").notNull(),
+  startDate: timestamp("start_date").defaultNow().notNull(),
+  endDate: timestamp("end_date").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  autoRenew: boolean("auto_renew").default(true).notNull(),
+  cancelledAt: timestamp("cancelled_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Payment History
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  subscriptionId: uuid("subscription_id").references(() => premiumSubscriptions.id, {
+    onDelete: "set null",
+  }),
+  amount: integer("amount").notNull(), // Amount in paisa (NPR smallest unit)
+  currency: text("currency").default("NPR").notNull(),
+  gateway: paymentGatewayEnum("gateway").notNull(),
+  gatewayTransactionId: text("gateway_transaction_id"),
+  status: paymentStatusEnum("status").default("pending").notNull(),
+  tier: subscriptionTierEnum("tier").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Offline Downloads tracking
+export const offlineDownloads = pgTable(
+  "offline_downloads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    videoId: uuid("video_id")
+      .notNull()
+      .references(() => videos.id, { onDelete: "cascade" }),
+    status: downloadStatusEnum("status").default("pending").notNull(),
+    quality: text("quality").default("720p").notNull(), // 720p, 1080p, 4k
+    expiresAt: timestamp("expires_at").notNull(),
+    downloadedAt: timestamp("downloaded_at").defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("offline_downloads_user_video_idx").on(t.userId, t.videoId)]
+);
+
+// Super Chat / Tips for live streams
+export const superChats = pgTable("super_chats", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  senderId: uuid("sender_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  receiverId: uuid("receiver_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  videoId: uuid("video_id").references(() => videos.id, { onDelete: "set null" }),
+  amount: integer("amount").notNull(), // Amount in paisa
+  currency: text("currency").default("NPR").notNull(),
+  message: text("message"),
+  color: text("color").default("#FFD700"), // Gold for VIP
+  gateway: paymentGatewayEnum("gateway").notNull(),
+  gatewayTransactionId: text("gateway_transaction_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Creator Earnings (from tips + revenue share)
+export const creatorEarnings = pgTable("creator_earnings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  amount: integer("amount").notNull(), // In paisa
+  currency: text("currency").default("NPR").notNull(),
+  source: text("source").notNull(), // "super_chat", "tip", "ad_revenue"
+  referenceId: uuid("reference_id"), // Points to superChat or payment id
+  isPaidOut: boolean("is_paid_out").default(false).notNull(),
+  paidOutAt: timestamp("paid_out_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -500,6 +629,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   communityPosts: many(communityPosts),
   communityPostLikes: many(communityPostLikes),
   pollVotes: many(pollVotes),
+  premiumSubscriptions: many(premiumSubscriptions),
+  payments: many(payments),
+  offlineDownloads: many(offlineDownloads),
+  superChatsSent: many(superChats, { relationName: "superChatSender" }),
+  superChatsReceived: many(superChats, { relationName: "superChatReceiver" }),
+  creatorEarnings: many(creatorEarnings),
 }));
 
 export const videosRelations = relations(videos, ({ one, many }) => ({
@@ -732,6 +867,62 @@ export const youtubeVideoLikesRelations = relations(youtubeVideoLikes, ({ one })
 export const youtubeSubscriptionsRelations = relations(youtubeSubscriptions, ({ one }) => ({
   user: one(users, {
     fields: [youtubeSubscriptions.userId],
+    references: [users.id],
+  }),
+}));
+
+// ─── Premium Relations ──────────────────────────────────────────────────────
+
+export const premiumSubscriptionsRelations = relations(premiumSubscriptions, ({ one, many }) => ({
+  user: one(users, {
+    fields: [premiumSubscriptions.userId],
+    references: [users.id],
+  }),
+  payments: many(payments),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  user: one(users, {
+    fields: [payments.userId],
+    references: [users.id],
+  }),
+  subscription: one(premiumSubscriptions, {
+    fields: [payments.subscriptionId],
+    references: [premiumSubscriptions.id],
+  }),
+}));
+
+export const offlineDownloadsRelations = relations(offlineDownloads, ({ one }) => ({
+  user: one(users, {
+    fields: [offlineDownloads.userId],
+    references: [users.id],
+  }),
+  video: one(videos, {
+    fields: [offlineDownloads.videoId],
+    references: [videos.id],
+  }),
+}));
+
+export const superChatsRelations = relations(superChats, ({ one }) => ({
+  sender: one(users, {
+    fields: [superChats.senderId],
+    references: [users.id],
+    relationName: "superChatSender",
+  }),
+  receiver: one(users, {
+    fields: [superChats.receiverId],
+    references: [users.id],
+    relationName: "superChatReceiver",
+  }),
+  video: one(videos, {
+    fields: [superChats.videoId],
+    references: [videos.id],
+  }),
+}));
+
+export const creatorEarningsRelations = relations(creatorEarnings, ({ one }) => ({
+  user: one(users, {
+    fields: [creatorEarnings.userId],
     references: [users.id],
   }),
 }));

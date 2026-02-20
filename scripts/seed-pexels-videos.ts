@@ -135,7 +135,7 @@ async function getOrCreateSystemUser(): Promise<string> {
   }
   const result = await sql(
     `INSERT INTO users (clerk_id, name, image_url, description, role, created_at, updated_at)
-     VALUES ('system_neptube_stock', 'NepTube', 'https://api.dicebear.com/7.x/initials/svg?seed=NepTube&backgroundColor=6366f1', 'Free stock videos powered by Pexels.', 'user', NOW(), NOW())
+     VALUES ('system_neptube_stock', 'NepTube', '/logo.svg', 'Free stock videos powered by Pexels.', 'user', NOW(), NOW())
      RETURNING id`
   );
   console.log("✅ Created NepTube system user");

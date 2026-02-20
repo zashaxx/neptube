@@ -66,21 +66,7 @@ function TrendingFeed() {
         </p>
       </div>
 
-      {/* Open Trending Algorithm */}
-      <div className="p-4 rounded-xl bg-muted/50 border border-border/50 mb-2">
-        <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
-          <span className="text-orange-500">📐</span>
-          Open Trending Formula
-        </h3>
-        <code className="block text-xs font-mono bg-background/80 p-3 rounded-lg text-muted-foreground leading-relaxed">
-          score = ((views × 0.6) + (likes × 1.2) + (comments × 1.5)) / hours_since_upload^1.2
-        </code>
-        <p className="text-[11px] text-muted-foreground mt-2">
-          This is the exact formula used to rank trending videos. No hidden signals —
-          views, likes, comments, and recency are the only inputs. Newer content with
-          high engagement rises faster.
-        </p>
-      </div>
+
 
       <div className="space-y-4">
         {data.map((video, index) => (
@@ -172,9 +158,7 @@ function TrendingFeed() {
       {ytConfigured?.configured && (ytTrending?.videos?.length ?? 0) > 0 && (
         <div className="mt-8 pt-6 border-t border-border/50">
           <div className="flex items-center gap-2 mb-5">
-            <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
-              <ExternalLink className="h-3.5 w-3.5 text-white" />
-            </div>
+            <Image src="/logo.svg" width={28} height={28} alt="NepTube" />
             <h2 className="text-lg font-bold">Trending on YouTube</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
@@ -189,9 +173,7 @@ function TrendingFeed() {
       {ytConfigured?.configured && ytLoading && (
         <div className="mt-8 pt-6 border-t border-border/50">
           <div className="flex items-center gap-2 mb-5">
-            <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
-              <ExternalLink className="h-3.5 w-3.5 text-white" />
-            </div>
+            <Image src="/logo.svg" width={28} height={28} alt="NepTube" />
             <h2 className="text-lg font-bold">Trending on YouTube</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">

@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { hasMinTier, type SubscriptionTier } from "@/lib/premium";
 
 export const createTRPCContext = cache(async () => {
   const { userId: clerkId } = await auth();
@@ -90,3 +91,57 @@ export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
     },
   });
 });
+
+/**
+ * Premium procedure factory - creates a procedure that requires a minimum subscription tier.
+ * Usage: premiumProcedure("premium") or premiumProcedure("vip")
+ */
+export const createPremiumProcedure = (minTier: SubscriptionTier) =>
+  t.procedure.use(async ({ ctx, next }) => {
+    if (!ctx.clerkId || !ctx.user) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "You must be logged in to perform this action",
+      });
+    }
+
+    if (ctx.user.isBanned) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Your account has been suspended.",
+      });
+    }
+
+    const userTier = (ctx.user.subscriptionTier as SubscriptionTier) || "free";
+
+    // Check if subscription has expired
+    if (userTier !== "free" && ctx.user.subscriptionExpiry) {
+      if (new Date() > ctx.user.subscriptionExpiry) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Your subscription has expired. Please renew to access premium features.",
+        });
+      }
+    }
+
+    if (!hasMinTier(userTier, minTier)) {
+      const tierNames: Record<string, string> = {
+        lite: "Lite",
+        premium: "Premium",
+        vip: "VIP",
+      };
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: `This feature requires a ${tierNames[minTier] || minTier} subscription or above.`,
+      });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        clerkId: ctx.clerkId,
+        user: ctx.user,
+        subscriptionTier: userTier,
+      },
+    });
+  });

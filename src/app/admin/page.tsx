@@ -3,6 +3,7 @@
 import { trpc } from "@/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Video, MessageSquare, Eye, Ban, Clock, AlertTriangle, Shield, Brain } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = trpc.admin.getStats.useQuery();
@@ -104,20 +105,17 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((stat) => (
-          <Card key={stat.title} className="hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                {stat.title}
-              </CardTitle>
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-              </div>
+          <Card key={stat.title} className="relative">
+            <CardHeader className="pb-2">
+              <div className={`text-2xl ${stat.color}`}>{<stat.icon />}</div>
+              <CardTitle className="mt-2 text-lg font-semibold">{stat.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {stat.value.toLocaleString()}
-              </div>
+              <div className="text-3xl font-bold">{stat.value}</div>
             </CardContent>
+            {stat.title === "Toxic Comments" && (
+              <Link href="/admin/comments/toxic" className="absolute top-2 right-2 text-xs text-blue-600 underline">View</Link>
+            )}
           </Card>
         ))}
       </div>

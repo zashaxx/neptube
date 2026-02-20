@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { Eye, Upload, Search, Loader2, Sparkles, TrendingUp, ExternalLink, Play, ChevronLeft, ChevronRight, MoreVertical, EyeOff, Ban, Undo2 } from "lucide-react";
+import { Eye, Upload, Search, Loader2, Sparkles, TrendingUp, Play, ChevronLeft, ChevronRight, MoreVertical, EyeOff, Ban, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -178,9 +178,7 @@ function ShortsRow({ shorts }: { shorts: { id: string; title: string; thumbnailU
     <section>
       <div className="flex items-center justify-between mb-3">
         <Link href="/shorts" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 bg-red-500 rounded-lg flex items-center justify-center">
-            <Play className="h-3.5 w-3.5 text-white" fill="white" />
-          </div>
+          <Image src="/logo.svg" width={28} height={28} alt="NepTube" />
           <h2 className="text-xl font-semibold group-hover:text-primary transition-colors">Shorts</h2>
         </Link>
         <div className="flex items-center gap-2">
@@ -249,14 +247,20 @@ function FeedPage() {
   const { isSignedIn } = useAuth();
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    trpc.videos.getFeed.useInfiniteQuery(
-      { limit: 20, search: searchQuery || undefined },
-      {
-        getNextPageParam: (lastPage) => lastPage.nextCursor,
-        enabled: feedMode === "explore",
-      }
-    );
+  const {
+    data,
+    error,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = trpc.videos.getFeed.useInfiniteQuery(
+    { limit: 20, search: searchQuery || undefined },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      staleTime: 60_000, // 1 minute
+    }
+  );
 
   const { data: personalizedData, isLoading: isPersonalizedLoading } =
     trpc.videos.getPersonalizedFeed.useQuery(
@@ -486,9 +490,7 @@ function FeedPage() {
           {ytConfigured?.configured && ytVideos.length > 0 && (
             <div className="mt-8 w-full max-w-7xl text-left">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
-                  <ExternalLink className="h-3.5 w-3.5 text-white" />
-                </div>
+                <Image src="/logo.svg" width={28} height={28} alt="NepTube" />
                 <h2 className="text-lg font-bold">
                   {searchQuery ? "Neptube Video Results" : "Trending on Neptube"}
                 </h2>
@@ -546,9 +548,7 @@ function FeedPage() {
             <div className="mt-4 pt-6 border-t border-border/50">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
-                    <ExternalLink className="h-3.5 w-3.5 text-white" />
-                  </div>
+                  <Image src="/logo.svg" width={28} height={28} alt="NepTube" />
                   <h2 className="text-lg font-bold">
                     {searchQuery ? (
                       <>Neptube video results for <span className="text-red-500">&quot;{searchQuery}&quot;</span></>
@@ -570,9 +570,7 @@ function FeedPage() {
           {ytConfigured?.configured && ytLoading && (
             <div className="mt-4 pt-6 border-t border-border/50">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 bg-red-600 rounded-lg flex items-center justify-center">
-                  <ExternalLink className="h-3.5 w-3.5 text-white" />
-                </div>
+                <Image src="/logo.svg" width={28} height={28} alt="NepTube" />
                 <h2 className="text-lg font-bold">Trending on Neptube</h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">

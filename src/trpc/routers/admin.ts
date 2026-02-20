@@ -273,4 +273,51 @@ export const adminRouter = createTRPCRouter({
       await ctx.db.delete(users).where(eq(users.id, input.userId));
       return { success: true };
     }),
+
+  // Get toxic comments for admin
+  getToxicComments: adminProcedure
+    .input(z.object({ limit: z.number().min(1).max(200).default(100) }))
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.db
+        .select({
+          id: comments.id,
+          content: comments.content,
+          createdAt: comments.createdAt,
+          toxicityScore: comments.toxicityScore,
+          user: {
+            id: users.id,
+            name: users.name,
+          },
+          video: {
+            id: videos.id,
+            title: videos.title,
+          },
+        })
+        .from(comments)
+        .innerJoin(users, eq(comments.userId, users.id))
+        .innerJoin(videos, eq(comments.videoId, videos.id))
+        .where(eq(comments.isToxic, true))
+        .orderBy(desc(comments.createdAt))
+        .limit(input.limit);
+      return { comments: rows };
+    }),
+
+  // Delete a comment by id
+  deleteComment: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.delete(comments).where(eq(comments.id, input.id));
+      return { success: true };
+    }),
+
+  // Unmark a comment as toxic
+  unmarkToxicComment: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(comments)
+        .set({ isToxic: false, toxicityScore: 0 })
+        .where(eq(comments.id, input.id));
+      return { success: true };
+    }),
 });

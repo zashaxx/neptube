@@ -12,7 +12,7 @@ import {
   getRecommendationScores,
   generateChapters,
   autoCategorizVideo,
-  calculateTrendingScore,
+  computeTrendingScore,
   summarizeComments,
   detectLanguage,
   extractKeywords,
@@ -899,10 +899,9 @@ export const videosRouter = createTRPCRouter({
       const scored = allPublic
         .map((v) => ({
           ...v,
-          trendingScore: calculateTrendingScore(
+          trendingScore: computeTrendingScore(
             v.viewCount,
             v.likeCount,
-            v.dislikeCount,
             v.commentCount,
             v.createdAt
           ),
