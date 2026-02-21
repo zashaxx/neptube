@@ -112,10 +112,11 @@ export const createPremiumProcedure = (minTier: SubscriptionTier) =>
       });
     }
 
-    const userTier = (ctx.user.subscriptionTier as SubscriptionTier) || "free";
+    const isAdmin = ctx.user.role === "admin";
+    const userTier: SubscriptionTier = isAdmin ? "vip" : ((ctx.user.subscriptionTier as SubscriptionTier) || "free");
 
-    // Check if subscription has expired
-    if (userTier !== "free" && ctx.user.subscriptionExpiry) {
+    // Check if subscription has expired (admins never expire)
+    if (!isAdmin && userTier !== "free" && ctx.user.subscriptionExpiry) {
       if (new Date() > ctx.user.subscriptionExpiry) {
         throw new TRPCError({
           code: "FORBIDDEN",

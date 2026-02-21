@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "@/trpc/client";
 import { UploadDropzone, UploadButton } from "@/lib/uploadthing";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Video, ImageIcon, ArrowLeft, Loader2, CheckCircle, Sparkles } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Upload, Video, ImageIcon, ArrowLeft, Loader2, CheckCircle, Sparkles, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -42,8 +43,17 @@ export default function UploadVideoPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [isShort, setIsShort] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("type") === "short") {
+      setIsShort(true);
+    }
+  }, [searchParams]);
 
   const generateAIThumbnail = async () => {
     if (!title) {
@@ -106,6 +116,7 @@ export default function UploadVideoPage() {
       videoURL: videoUrl,
       thumbnailURL: thumbnailUrl || undefined,
       category: category || undefined,
+      isShort,
     });
   };
 
@@ -117,7 +128,9 @@ export default function UploadVideoPage() {
           <Link href="/feed" className="text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-lg font-semibold tracking-tight">Upload Video</h1>
+          <h1 className="text-lg font-semibold tracking-tight">
+            {isShort ? "Upload Short" : "Upload Video"}
+          </h1>
         </div>
       </header>
 
@@ -248,6 +261,23 @@ export default function UploadVideoPage() {
                         maxLength={5000}
                       />
                       <p className="text-xs text-gray-500 mt-1">{description.length}/5000</p>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="is-short" className="flex items-center gap-2 cursor-pointer">
+                          <Zap className="h-4 w-4 text-yellow-500" />
+                          Upload as Short
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Short videos (under 60s) appear in the Shorts feed
+                        </p>
+                      </div>
+                      <Switch
+                        id="is-short"
+                        checked={isShort}
+                        onCheckedChange={setIsShort}
+                      />
                     </div>
 
                     <div>

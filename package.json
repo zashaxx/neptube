@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.2",
+    "@distube/ytdl-core": "^4.16.12",
     "@hookform/resolvers": "^4.1.0",
     "@neondatabase/serverless": "0.10.4",
     "@radix-ui/react-accordion": "^1.2.3",

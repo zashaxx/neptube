@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Video, Upload } from "lucide-react";
 import { NotificationBell } from "./notification-bell";
 import { ThemeToggle } from "./theme-toggle";
+import { CommandPaletteTrigger } from "./command-palette-trigger";
+import { AdminNavButton } from "./admin-nav-button";
 
 
 export const HomeNavbar = () => {
@@ -32,6 +34,8 @@ export const HomeNavbar = () => {
                 </Suspense>
         </div>
         <div className="flex-shrink-0 items-center flex gap-1">
+              <CommandPaletteTrigger />
+              <AdminNavButton />
               <Link href="/studio/upload">
                 <Button variant="ghost" size="icon" title="Upload video" className="rounded-lg">
                   <Upload className="h-4.5 w-4.5" />

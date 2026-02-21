@@ -327,6 +327,7 @@ export const videosRouter = createTRPCRouter({
         videoURL: z.string().url().optional(),
         visibility: z.enum(["public", "private", "unlisted"]).default("public"),
         duration: z.number().int().min(0).optional(),
+        isShort: z.boolean().default(false),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -536,10 +537,36 @@ export const videosRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  // Increment view count
+  // Increment view count — only counts once per user per video per 24 hours.
+  // For anonymous users, always increments (no duplicate guard).
   incrementViews: baseProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      const userId = ctx.clerkId ? ctx.user?.id : null;
+
+      if (userId) {
+        // Check if this user already viewed this video in the last 24 hours
+        const existingWatch = await ctx.db
+          .select({ id: watchHistory.id, watchedAt: watchHistory.watchedAt })
+          .from(watchHistory)
+          .where(
+            and(
+              eq(watchHistory.userId, userId),
+              eq(watchHistory.videoId, input.id)
+            )
+          )
+          .limit(1);
+
+        if (
+          existingWatch[0] &&
+          Date.now() - new Date(existingWatch[0].watchedAt).getTime() < 24 * 60 * 60 * 1000
+        ) {
+          // Already watched within 24h — don't increment
+          return { success: true, alreadyCounted: true };
+        }
+      }
+
+      // Increment the view count
       await ctx.db
         .update(videos)
         .set({
@@ -547,7 +574,7 @@ export const videosRouter = createTRPCRouter({
         })
         .where(eq(videos.id, input.id));
 
-      return { success: true };
+      return { success: true, alreadyCounted: false };
     }),
 
   // Like or dislike video

@@ -14,6 +14,7 @@ import {
   Volume2,
   VolumeX,
   Play,
+  Plus,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -299,15 +300,32 @@ export default function ShortsPage() {
           <Play className="h-10 w-10 text-primary/60" />
         </div>
         <h2 className="text-lg font-semibold mb-1">No Shorts yet</h2>
-        <p className="text-muted-foreground text-sm max-w-sm">
+        <p className="text-muted-foreground text-sm max-w-sm mb-4">
           Upload short videos (under 60 seconds) to see them here!
         </p>
+        <Link href="/studio/upload?type=short">
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Upload Short
+          </Button>
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="flex items-center justify-center h-[calc(100vh-56px)] relative">
+      {/* Upload Short FAB */}
+      <Link
+        href="/studio/upload?type=short"
+        className="absolute top-4 right-4 z-40"
+      >
+        <Button className="gap-2 rounded-full shadow-lg">
+          <Plus className="h-4 w-4" />
+          Upload Short
+        </Button>
+      </Link>
+
       {/* Shorts container + nav wrapper */}
       <div className="relative flex items-center gap-4">
         {/* Shorts container */}

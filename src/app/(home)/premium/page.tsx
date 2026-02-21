@@ -49,7 +49,9 @@ type Gateway = "esewa" | "khalti" | "stripe" | "paypal";
 export default function PremiumPlansPage() {
   const { data: plans, isLoading: plansLoading } = trpc.premium.getPlans.useQuery();
   const { data: mySubscription, isLoading: subLoading } = trpc.premium.getMySubscription.useQuery();
+  const { data: currentUser } = trpc.users.me.useQuery(undefined, { staleTime: 60_000 });
   const subscribe = trpc.premium.subscribe.useMutation();
+  const isAdmin = currentUser?.role === "admin";
 
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [selectedGateway, setSelectedGateway] = useState<Gateway>("esewa");
@@ -106,6 +108,14 @@ export default function PremiumPlansPage() {
             <Badge className="mt-4 px-4 py-1 text-sm bg-green-600 text-white">
               Current Plan: {currentTier.charAt(0).toUpperCase() + currentTier.slice(1)}
             </Badge>
+          )}
+          {isAdmin && (
+            <div className="mt-3">
+              <Badge className="px-4 py-1.5 text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold">
+                <Crown className="h-3.5 w-3.5 mr-1.5 inline" />
+                Admin — All Features Unlocked
+              </Badge>
+            </div>
           )}
         </div>
 
@@ -170,7 +180,15 @@ export default function PremiumPlansPage() {
                 </CardContent>
 
                 <CardFooter className="pt-4">
-                  {isCurrentPlan ? (
+                  {isAdmin ? (
+                    <Button
+                      className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold cursor-default"
+                      disabled
+                    >
+                      <Crown className="h-4 w-4 mr-1.5" />
+                      Admin Access
+                    </Button>
+                  ) : isCurrentPlan ? (
                     <Button
                       className="w-full bg-green-700 text-white cursor-default"
                       disabled

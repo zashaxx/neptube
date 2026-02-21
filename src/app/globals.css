@@ -83,6 +83,139 @@
   }
 }
 
+/* ──────────────── NepTube Sidebar ──────────────── */
+.neptube-sidebar-content {
+  background: hsl(var(--background) / 0.85);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+}
+.dark .neptube-sidebar-content {
+  background: hsl(260 20% 6% / 0.88);
+}
+
+/* Section label with dot accent */
+.neptube-section-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground) / 0.6) !important;
+  padding: 8px 16px 4px !important;
+}
+.neptube-section-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, hsl(262 83% 58%), hsl(190 80% 50%));
+  flex-shrink: 0;
+}
+
+/* Colored icon badge */
+.neptube-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.2s ease;
+}
+
+/* Nav item styling */
+.neptube-nav-item {
+  border-radius: 10px !important;
+  padding: 6px 10px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.neptube-nav-item:hover {
+  background: hsl(var(--accent) / 0.7) !important;
+}
+.neptube-nav-item:hover .neptube-icon-badge {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px hsl(0 0% 0% / 0.15);
+}
+
+/* Active nav state */
+.neptube-nav-active {
+  background: hsl(262 60% 55% / 0.1) !important;
+  position: relative;
+}
+.dark .neptube-nav-active {
+  background: hsl(262 50% 60% / 0.12) !important;
+}
+.neptube-nav-active::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, hsl(262 83% 58%), hsl(280 70% 55%));
+  box-shadow: 0 0 8px hsl(262 83% 58% / 0.5);
+}
+
+/* Section divider */
+.neptube-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--border) / 0.5) 20%,
+    hsl(262 83% 58% / 0.2) 50%,
+    hsl(var(--border) / 0.5) 80%,
+    transparent 100%
+  );
+  margin: 4px 0;
+}
+
+/* Premium upgrade card */
+.neptube-premium-card {
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, hsl(262 60% 30%), hsl(280 50% 25%), hsl(240 40% 22%));
+  border: 1px solid hsl(262 60% 50% / 0.2);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.neptube-premium-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -4px hsl(262 60% 40% / 0.4);
+}
+.neptube-premium-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: hsl(262 83% 58% / 0.15);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+/* Admin panel card */
+.neptube-admin-card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: hsl(0 60% 50% / 0.08);
+  border: 1px solid hsl(0 60% 50% / 0.15);
+  transition: all 0.2s ease;
+}
+.neptube-admin-card:hover {
+  background: hsl(0 60% 50% / 0.14);
+  border-color: hsl(0 60% 50% / 0.3);
+  box-shadow: 0 4px 16px -4px hsl(0 60% 50% / 0.2);
+}
+
 /* ──────────────── Custom Scrollbar ──────────────── */
 ::-webkit-scrollbar {
   width: 6px;
@@ -373,4 +506,187 @@
   background: hsl(var(--primary));
   border-radius: 0 2px 0 0;
   z-index: 10;
+}
+
+/* ──────────────── Bento Grid Layout ──────────────── */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.25rem;
+}
+@media (min-width: 640px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1280px) {
+  .bento-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ──────────────── Bento Hero Card ──────────────── */
+.bento-hero-card {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    0 4px 24px -4px hsl(0 0% 0% / 0.1),
+    0 0 0 1px hsl(var(--border) / 0.3);
+}
+.bento-hero-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 40px -8px hsl(262 83% 58% / 0.2),
+    0 0 0 1px hsl(262 83% 58% / 0.3),
+    0 20px 60px -12px hsl(0 0% 0% / 0.2);
+}
+.dark .bento-hero-card {
+  box-shadow:
+    0 4px 24px -4px hsl(0 0% 0% / 0.3),
+    0 0 0 1px hsl(var(--border) / 0.2);
+}
+.dark .bento-hero-card:hover {
+  box-shadow:
+    0 12px 40px -8px hsl(262 83% 65% / 0.25),
+    0 0 0 1px hsl(262 83% 65% / 0.35),
+    0 20px 60px -12px hsl(0 0% 0% / 0.5);
+}
+
+/* ──────────────── Bento Card ──────────────── */
+.bento-card {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.bento-card:hover {
+  transform: translateY(-4px);
+}
+
+/* ──────────────── Shorts Card 3D Effect ──────────────── */
+.shorts-card-3d {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px -4px hsl(0 0% 0% / 0.15);
+}
+.shorts-card-3d:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow:
+    0 16px 40px -8px hsl(262 83% 58% / 0.2),
+    0 0 0 1px hsl(262 83% 58% / 0.15);
+}
+
+/* ──────────────── Category World Card ──────────────── */
+.category-world-card {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.category-world-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px -8px hsl(262 83% 58% / 0.15);
+}
+
+/* ──────────────── Gamification Bar ──────────────── */
+.gamification-bar {
+  margin-bottom: 1.25rem;
+  background: hsl(var(--card) / 0.5);
+  border: 1px solid hsl(var(--border) / 0.4);
+}
+.dark .gamification-bar {
+  background: hsl(var(--card) / 0.35);
+}
+
+/* ──────────────── Focus / Minimal Mode ──────────────── */
+.minimal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.focus-mode .bento-hero-card,
+.focus-mode .category-world-card,
+.focus-mode .gamification-bar,
+.focus-mode .shorts-card-3d {
+  display: none;
+}
+
+/* ──────────────── Hero Play Pulse ──────────────── */
+@keyframes play-pulse {
+  0% { box-shadow: 0 0 0 0 hsl(0 0% 100% / 0.3); }
+  70% { box-shadow: 0 0 0 16px hsl(0 0% 100% / 0); }
+  100% { box-shadow: 0 0 0 0 hsl(0 0% 100% / 0); }
+}
+.hero-play-pulse {
+  animation: play-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ──────────────── Magnetic Button ──────────────── */
+.magnetic-btn {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.magnetic-btn:hover {
+  transform: scale(1.05);
+}
+.magnetic-btn:active {
+  transform: scale(0.97);
+}
+
+/* ──────────────── Feed Container ──────────────── */
+.feed-container {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ──────────────── Bottom Dock ──────────────── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-dock-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ──────────────── Enhanced Hover States ──────────────── */
+.hover-lift {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px -6px hsl(262 83% 58% / 0.15);
+}
+
+/* ──────────────── Pulse Glow (badges, live indicators) ──────────────── */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(262 83% 58% / 0.4); }
+  50% { box-shadow: 0 0 0 8px hsl(262 83% 58% / 0); }
+}
+.glow-pulse {
+  animation: glow-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ──────────────── Skeleton Shimmer ──────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.08) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ──────────────── Floating Label ──────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+.float-animate {
+  animation: float 3s ease-in-out infinite;
 }

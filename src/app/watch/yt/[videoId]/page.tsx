@@ -22,14 +22,38 @@ import {
   ChevronUp,
   Pencil,
   X,
+  Download,
+  Loader2,
+  BookmarkPlus,
+  BookmarkCheck,
+  ListPlus,
+  Flag,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 function formatCount(count?: number | null): string {
   if (!count) return "0";
@@ -266,6 +290,12 @@ export default function YouTubeWatchPage() {
   const [copied, setCopied] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [playlistOpen, setPlaylistOpen] = useState(false);
+  const [selectedPlaylist, setSelectedPlaylist] = useState("");
+  const [isDownloading, setIsDownloading] = useState(false);
   const utils = trpc.useUtils();
 
   // ── Data fetches ──────────────────────────────────────────────────────────
@@ -309,6 +339,38 @@ export default function YouTubeWatchPage() {
     { youtubeVideoId: videoId },
     { enabled: !!videoId }
   );
+
+  // Playlists & Watch Later
+  const { data: myPlaylists } = trpc.playlists.getMyPlaylists.useQuery(
+    undefined,
+    { enabled: !!clerkUser && playlistOpen }
+  );
+
+  const { data: isInWatchLater } = trpc.playlists.isInWatchLater.useQuery(
+    { videoId },
+    { enabled: !!clerkUser }
+  );
+
+  const addToWatchLater = trpc.playlists.addToWatchLater.useMutation({
+    onSuccess: () => {
+      utils.playlists.isInWatchLater.invalidate({ videoId });
+    },
+  });
+
+  const addToPlaylist = trpc.playlists.addVideo.useMutation({
+    onSuccess: () => {
+      setPlaylistOpen(false);
+      setSelectedPlaylist("");
+    },
+  });
+
+  const createReport = trpc.reports.create.useMutation({
+    onSuccess: () => {
+      setReportOpen(false);
+      setReportReason("");
+      setReportDescription("");
+    },
+  });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
 
@@ -399,7 +461,7 @@ export default function YouTubeWatchPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <h2 className="text-xl font-semibold mb-2">Video not available</h2>
         <p className="text-muted-foreground mb-4">
-          This YouTube video could not be loaded. The API key may not be configured.
+          This NepTube video could not be loaded. The API key may not be configured.
         </p>
         <Button
           onClick={() => router.push("/feed")}
@@ -460,7 +522,7 @@ export default function YouTubeWatchPage() {
                 </Avatar>
                 <div>
                   <p className="font-semibold text-sm">{video.channelTitle}</p>
-                  <p className="text-xs text-muted-foreground">YouTube Channel</p>
+                  <p className="text-xs text-muted-foreground">NepTube Channel</p>
                 </div>
 
                 {/* Subscribe Button */}
@@ -543,7 +605,7 @@ export default function YouTubeWatchPage() {
                   {copied ? "Copied!" : "Share"}
                 </Button>
 
-                {/* View on YouTube */}
+                {/* View on NepTube (YouTube) */}
                 <Link
                   href={`https://www.youtube.com/watch?v=${videoId}`}
                   target="_blank"
@@ -551,13 +613,201 @@ export default function YouTubeWatchPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1.5 text-red-500 border-red-500/30 hover:bg-red-500/10"
+                    className="gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
                   >
                     <ExternalLink className="h-4 w-4" />
-                    YouTube
+                    NepTube
                   </Button>
                 </Link>
               </div>
+            </div>
+
+            {/* Extra action row: Download, Watch Later, Playlist, Report */}
+            <div className="flex items-center gap-1 flex-wrap">
+              {/* Download */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 rounded-lg"
+                disabled={isDownloading}
+                onClick={async () => {
+                  setIsDownloading(true);
+                  toast.info("Starting download…");
+                  try {
+                    const res = await fetch(`/api/download/yt?v=${videoId}`);
+                    if (!res.ok) {
+                      const body = await res.json().catch(() => null);
+                      throw new Error(body?.error ?? "Download failed");
+                    }
+                    const blob = await res.blob();
+                    const disposition = res.headers.get("Content-Disposition") ?? "";
+                    const filenameMatch = disposition.match(/filename="?(.+?)"?$/);
+                    const filename = filenameMatch?.[1] ?? `${video?.title?.replace(/[^\w\s-]/g, "") ?? "video"}.mp4`;
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                    toast.success("Download complete!");
+                  } catch (err: unknown) {
+                    console.error("[yt-download]", err);
+                    toast.error(err instanceof Error ? err.message : "Download failed");
+                  } finally {
+                    setIsDownloading(false);
+                  }
+                }}
+              >
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                {isDownloading ? "Downloading…" : "Download"}
+              </Button>
+
+              {/* Watch Later */}
+              {clerkUser && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 rounded-lg"
+                  onClick={() => addToWatchLater.mutate({ videoId })}
+                  disabled={addToWatchLater.isPending}
+                >
+                  {isInWatchLater ? (
+                    <BookmarkCheck className="h-4 w-4 text-primary" />
+                  ) : (
+                    <BookmarkPlus className="h-4 w-4" />
+                  )}
+                  {isInWatchLater ? "Saved" : "Watch Later"}
+                </Button>
+              )}
+
+              {/* Save to Playlist */}
+              {clerkUser && (
+                <Dialog open={playlistOpen} onOpenChange={setPlaylistOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 rounded-lg"
+                    >
+                      <ListPlus className="h-4 w-4" />
+                      Save
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                      <DialogTitle>Save to playlist</DialogTitle>
+                    </DialogHeader>
+                    {myPlaylists && myPlaylists.length > 0 ? (
+                      <div className="space-y-3">
+                        <Select
+                          value={selectedPlaylist}
+                          onValueChange={setSelectedPlaylist}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a playlist" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {myPlaylists.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          className="w-full rounded-lg"
+                          disabled={!selectedPlaylist || addToPlaylist.isPending}
+                          onClick={() => {
+                            if (selectedPlaylist) {
+                              addToPlaylist.mutate({
+                                playlistId: selectedPlaylist,
+                                videoId,
+                              });
+                            }
+                          }}
+                        >
+                          {addToPlaylist.isPending ? "Saving..." : "Add to Playlist"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No playlists yet.{" "}
+                        <Link href="/playlists" className="text-primary hover:underline">
+                          Create one
+                        </Link>
+                      </p>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              )}
+
+              {/* Report */}
+              {clerkUser && (
+                <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 rounded-lg"
+                    >
+                      <Flag className="h-4 w-4" />
+                      Report
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Report video</DialogTitle>
+                      <DialogDescription>
+                        Help us understand the issue.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Select value={reportReason} onValueChange={setReportReason}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a reason" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Spam or misleading">Spam or misleading</SelectItem>
+                        <SelectItem value="Hateful or abusive content">Hateful or abusive</SelectItem>
+                        <SelectItem value="Harmful or dangerous acts">Harmful content</SelectItem>
+                        <SelectItem value="Sexual content">Sexual content</SelectItem>
+                        <SelectItem value="Child safety">Child safety</SelectItem>
+                        <SelectItem value="Copyright violation">Copyright violation</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Textarea
+                      value={reportDescription}
+                      onChange={(e) => setReportDescription(e.target.value)}
+                      placeholder="Describe the issue (optional)..."
+                      className="min-h-[80px]"
+                    />
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setReportOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        disabled={!reportReason || createReport.isPending}
+                        onClick={() => {
+                          createReport.mutate({
+                            targetType: "video",
+                            targetId: videoId,
+                            reason: reportReason,
+                            description: reportDescription || undefined,
+                          });
+                        }}
+                      >
+                        {createReport.isPending ? "Submitting..." : "Submit Report"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
 
             {/* Stats */}
@@ -570,7 +820,7 @@ export default function YouTubeWatchPage() {
                 <MessageCircle className="h-4 w-4" />
                 {neptubeCommentCount > 0
                   ? `${neptubeCommentCount} NepTube comments`
-                  : `${formatCount(video.commentCount)} YouTube comments`}
+                  : `${formatCount(video.commentCount)} NepTube comments`}
               </span>
               <span>
                 {formatDistanceToNow(new Date(video.publishedAt), {

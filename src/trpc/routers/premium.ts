@@ -105,7 +105,9 @@ export const premiumRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Video not found" });
       }
 
-      const tier = (ctx.user.subscriptionTier as SubscriptionTier) || "free";
+      // Admin gets VIP-level access for free
+      const isAdmin = ctx.user.role === "admin";
+      const tier: SubscriptionTier = isAdmin ? "vip" : ((ctx.user.subscriptionTier as SubscriptionTier) || "free");
       const accessResult = canAccessContent(tier, video[0]);
 
       return {
@@ -341,7 +343,9 @@ export const premiumRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const tier = (ctx.user.subscriptionTier as SubscriptionTier) || "free";
+      // Admin gets VIP-level access for free
+      const isAdmin = ctx.user.role === "admin";
+      const tier: SubscriptionTier = isAdmin ? "vip" : ((ctx.user.subscriptionTier as SubscriptionTier) || "free");
       const quota = getDownloadQuota(tier);
 
       if (!quota.allowed) {
@@ -462,7 +466,9 @@ export const premiumRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const tier = (ctx.user.subscriptionTier as SubscriptionTier) || "free";
+      // Admin gets VIP-level access for free
+      const isAdmin = ctx.user.role === "admin";
+      const tier: SubscriptionTier = isAdmin ? "vip" : ((ctx.user.subscriptionTier as SubscriptionTier) || "free");
 
       if (!hasMinTier(tier, "vip")) {
         throw new TRPCError({
@@ -522,7 +528,9 @@ export const premiumRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const tier = (ctx.user.subscriptionTier as SubscriptionTier) || "free";
+      // Admin gets VIP-level access for free
+      const isAdmin = ctx.user.role === "admin";
+      const tier: SubscriptionTier = isAdmin ? "vip" : ((ctx.user.subscriptionTier as SubscriptionTier) || "free");
 
       if (!hasMinTier(tier, "vip")) {
         throw new TRPCError({
@@ -593,7 +601,9 @@ export const premiumRouter = createTRPCRouter({
 
   /** Get creator earnings summary */
   getCreatorEarnings: protectedProcedure.query(async ({ ctx }) => {
-    const tier = (ctx.user.subscriptionTier as SubscriptionTier) || "free";
+    // Admin gets VIP-level access for free
+    const isAdmin = ctx.user.role === "admin";
+    const tier: SubscriptionTier = isAdmin ? "vip" : ((ctx.user.subscriptionTier as SubscriptionTier) || "free");
 
     if (!hasMinTier(tier, "vip")) {
       throw new TRPCError({
@@ -662,7 +672,9 @@ export const premiumRouter = createTRPCRouter({
 
   /** Get watch-time analytics (VIP only) */
   getWatchTimeAnalytics: protectedProcedure.query(async ({ ctx }) => {
-    const tier = (ctx.user.subscriptionTier as SubscriptionTier) || "free";
+    // Admin gets VIP-level access for free
+    const isAdmin = ctx.user.role === "admin";
+    const tier: SubscriptionTier = isAdmin ? "vip" : ((ctx.user.subscriptionTier as SubscriptionTier) || "free");
 
     if (!hasMinTier(tier, "vip")) {
       throw new TRPCError({
