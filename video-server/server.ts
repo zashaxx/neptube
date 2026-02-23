@@ -468,6 +468,57 @@ Bun.serve({
       return Response.json({ error: "Video file not available" }, { status: 404 });
     }
 
+    // ─── Register a new video (called by NepTube after upload) ───
+    if (path === "/api/register" && request.method === "POST") {
+      try {
+        const body = await request.json() as {
+          id: string;
+          title: string;
+          videoUrl?: string;
+          thumbnailUrl?: string;
+          duration?: number;
+        };
+
+        if (!body.id || !body.title) {
+          return Response.json({ error: "id and title are required" }, { status: 400 });
+        }
+
+        // Skip if already registered
+        const existing = videoIndex.find(v => v.id === body.id);
+        if (existing) {
+          return Response.json({ ok: true, message: "Already registered", videos: videoIndex.length });
+        }
+
+        const safeName = body.title
+          .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
+          .replace(/\s+/g, "_")
+          .replace(/_+/g, "_")
+          .substring(0, 100)
+          .trim();
+
+        const newEntry: VideoMeta = {
+          id: body.id,
+          title: body.title,
+          filename: `${safeName}.mp4`,
+          originalUrl: body.videoUrl || undefined,
+          thumbnailUrl: body.thumbnailUrl || undefined,
+          duration: body.duration || undefined,
+        };
+
+        videoIndex.push(newEntry);
+
+        // Persist to videos.json
+        const indexPath = join(import.meta.dir, "videos.json");
+        await Bun.write(indexPath, JSON.stringify(videoIndex, null, 2));
+
+        console.log(`✅ Registered new video: ${body.title} (${body.id})`);
+        return Response.json({ ok: true, videos: videoIndex.length });
+      } catch (err) {
+        console.error("❌ Failed to register video:", err);
+        return Response.json({ error: "Invalid request body" }, { status: 400 });
+      }
+    }
+
     // ─── Reload index ───
     if (path === "/reload") {
       await loadVideoIndex();

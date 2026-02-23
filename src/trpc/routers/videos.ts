@@ -502,6 +502,24 @@ export const videosRouter = createTRPCRouter({
               );
             }
           }
+
+          // 8. Register video with Demo Player (video server on port 4000)
+          try {
+            await fetch("http://localhost:4000/api/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: videoId,
+                title: input.title,
+                videoUrl: input.videoURL,
+                thumbnailUrl: input.thumbnailURL,
+                duration: input.duration,
+              }),
+            });
+            console.log(`🎬 Video registered with Demo Player: ${input.title}`);
+          } catch {
+            console.log("⚠️ Demo Player not running — skipped video registration");
+          }
         } catch (err) {
           console.error("ML processing failed for video:", videoId, err);
         }

@@ -13,7 +13,7 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
-import { neon } from "@neondatabase/serverless";
+import pg from "pg";
 import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
 
@@ -23,7 +23,7 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-const sql = neon(DATABASE_URL);
+const pool = new pg.Pool({ connectionString: DATABASE_URL });
 const VIDEOS_DIR = join(import.meta.dir, "videos");
 const INDEX_FILE = join(import.meta.dir, "videos.json");
 
@@ -70,12 +70,13 @@ async function main() {
   await mkdir(VIDEOS_DIR, { recursive: true });
 
   // Fetch all videos with URLs from the database
-  const rows = await sql`
+  const result = await pool.query(`
     SELECT id, title, video_url, thumbnail_url, duration 
     FROM videos 
     WHERE video_url IS NOT NULL 
     ORDER BY created_at DESC
-  ` as VideoRow[];
+  `);
+  const rows = result.rows as VideoRow[];
 
   console.log(`📋 Found ${rows.length} videos in database\n`);
 
@@ -163,6 +164,8 @@ Next steps:
   2. Open demo player:        http://localhost:4000
   3. Play in VLC:             Ctrl+N → http://localhost:4000/stream/<id>
 `);
+
+  await pool.end();
 }
 
 function formatBytes(bytes: number): string {
