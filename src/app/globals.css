@@ -78,7 +78,11 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+    font-family:
+      var(--font-inter),
+      system-ui,
+      -apple-system,
+      sans-serif;
     letter-spacing: -0.011em;
   }
 }
@@ -123,8 +127,9 @@
   height: 28px;
   border-radius: 8px;
   flex-shrink: 0;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 0.2s ease;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease;
 }
 
 /* Nav item styling */
@@ -179,11 +184,18 @@
 .neptube-premium-card {
   padding: 14px;
   border-radius: 14px;
-  background: linear-gradient(135deg, hsl(262 60% 30%), hsl(280 50% 25%), hsl(240 40% 22%));
+  background: linear-gradient(
+    135deg,
+    hsl(262 60% 30%),
+    hsl(280 50% 25%),
+    hsl(240 40% 22%)
+  );
   border: 1px solid hsl(262 60% 50% / 0.2);
   position: relative;
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 .neptube-premium-card:hover {
   transform: translateY(-2px);
@@ -294,21 +306,25 @@
 }
 
 @keyframes aurora-drift {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(60px, 40px) scale(1.15); }
-  100% { transform: translate(-30px, 70px) scale(1.05); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(60px, 40px) scale(1.15);
+  }
+  100% {
+    transform: translate(-30px, 70px) scale(1.05);
+  }
 }
 
 /* ──────────────── Glassmorphism Card ──────────────── */
 .glass-card {
-  background: hsl(var(--card) / 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: hsl(var(--card));
   border: 1px solid hsl(var(--border) / 0.5);
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .glass-card:hover {
-  background: hsl(var(--card) / 0.8);
+  background: hsl(var(--card));
   border-color: transparent;
   box-shadow:
     0 0 0 1px hsl(262 83% 58% / 0.25),
@@ -316,11 +332,11 @@
     0 8px 32px -8px hsl(0 0% 0% / 0.15);
 }
 .dark .glass-card {
-  background: hsl(var(--card) / 0.45);
+  background: hsl(var(--card));
   border-color: hsl(var(--border) / 0.3);
 }
 .dark .glass-card:hover {
-  background: hsl(var(--card) / 0.6);
+  background: hsl(var(--card));
   box-shadow:
     0 0 0 1px hsl(262 83% 65% / 0.3),
     0 0 24px -4px hsl(262 83% 65% / 0.2),
@@ -342,7 +358,12 @@
 }
 
 .gradient-btn {
-  background: linear-gradient(135deg, hsl(262 83% 58%), hsl(280 70% 55%), hsl(190 80% 50%));
+  background: linear-gradient(
+    135deg,
+    hsl(262 83% 58%),
+    hsl(280 70% 55%),
+    hsl(190 80% 50%)
+  );
   background-size: 200% 200%;
   animation: gradient-shift 4s ease infinite;
   color: white;
@@ -354,8 +375,13 @@
 }
 
 @keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 /* ──────────────── Sidebar Glow Effects ──────────────── */
@@ -409,18 +435,42 @@
 .card-animate {
   animation: card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.card-animate:nth-child(1) { animation-delay: 0.02s; }
-.card-animate:nth-child(2) { animation-delay: 0.06s; }
-.card-animate:nth-child(3) { animation-delay: 0.10s; }
-.card-animate:nth-child(4) { animation-delay: 0.14s; }
-.card-animate:nth-child(5) { animation-delay: 0.18s; }
-.card-animate:nth-child(6) { animation-delay: 0.22s; }
-.card-animate:nth-child(7) { animation-delay: 0.26s; }
-.card-animate:nth-child(8) { animation-delay: 0.30s; }
-.card-animate:nth-child(9) { animation-delay: 0.34s; }
-.card-animate:nth-child(10) { animation-delay: 0.38s; }
-.card-animate:nth-child(11) { animation-delay: 0.42s; }
-.card-animate:nth-child(12) { animation-delay: 0.46s; }
+.card-animate:nth-child(1) {
+  animation-delay: 0.02s;
+}
+.card-animate:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.card-animate:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.card-animate:nth-child(4) {
+  animation-delay: 0.14s;
+}
+.card-animate:nth-child(5) {
+  animation-delay: 0.18s;
+}
+.card-animate:nth-child(6) {
+  animation-delay: 0.22s;
+}
+.card-animate:nth-child(7) {
+  animation-delay: 0.26s;
+}
+.card-animate:nth-child(8) {
+  animation-delay: 0.3s;
+}
+.card-animate:nth-child(9) {
+  animation-delay: 0.34s;
+}
+.card-animate:nth-child(10) {
+  animation-delay: 0.38s;
+}
+.card-animate:nth-child(11) {
+  animation-delay: 0.42s;
+}
+.card-animate:nth-child(12) {
+  animation-delay: 0.46s;
+}
 
 /* ──────────────── Gradient Border Wrapper ──────────────── */
 .gradient-border {
@@ -434,7 +484,11 @@
   inset: 0;
   padding: 1px;
   border-radius: inherit;
-  background: linear-gradient(135deg, hsl(262 83% 58% / 0), hsl(262 83% 58% / 0));
+  background: linear-gradient(
+    135deg,
+    hsl(262 83% 58% / 0),
+    hsl(262 83% 58% / 0)
+  );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -444,7 +498,11 @@
   transition: background 0.35s ease;
 }
 .gradient-border:hover::before {
-  background: linear-gradient(135deg, hsl(262 83% 58% / 0.6), hsl(190 80% 50% / 0.6));
+  background: linear-gradient(
+    135deg,
+    hsl(262 83% 58% / 0.6),
+    hsl(190 80% 50% / 0.6)
+  );
 }
 
 /* ──────────────── Thumbnail Hover Overlay ──────────────── */
@@ -487,10 +545,22 @@
 
 /* Keyboard shortcut overlay fade */
 @keyframes fade-in-out {
-  0% { opacity: 0; transform: scale(0.8); }
-  20% { opacity: 1; transform: scale(1); }
-  80% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.95); }
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
 }
 
 .animate-fade-in {
@@ -533,8 +603,9 @@
 
 /* ──────────────── Bento Hero Card ──────────────── */
 .bento-hero-card {
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow:
     0 4px 24px -4px hsl(0 0% 0% / 0.1),
     0 0 0 1px hsl(var(--border) / 0.3);
@@ -560,8 +631,9 @@
 
 /* ──────────────── Bento Card ──────────────── */
 .bento-card {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .bento-card:hover {
   transform: translateY(-4px);
@@ -569,8 +641,9 @@
 
 /* ──────────────── Shorts Card 3D Effect ──────────────── */
 .shorts-card-3d {
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 16px -4px hsl(0 0% 0% / 0.15);
 }
 .shorts-card-3d:hover {
@@ -582,8 +655,9 @@
 
 /* ──────────────── Category World Card ──────────────── */
 .category-world-card {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .category-world-card:hover {
   transform: translateY(-2px);
@@ -616,9 +690,15 @@
 
 /* ──────────────── Hero Play Pulse ──────────────── */
 @keyframes play-pulse {
-  0% { box-shadow: 0 0 0 0 hsl(0 0% 100% / 0.3); }
-  70% { box-shadow: 0 0 0 16px hsl(0 0% 100% / 0); }
-  100% { box-shadow: 0 0 0 0 hsl(0 0% 100% / 0); }
+  0% {
+    box-shadow: 0 0 0 0 hsl(0 0% 100% / 0.3);
+  }
+  70% {
+    box-shadow: 0 0 0 16px hsl(0 0% 100% / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsl(0 0% 100% / 0);
+  }
 }
 .hero-play-pulse {
   animation: play-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -649,8 +729,9 @@
 
 /* ──────────────── Enhanced Hover States ──────────────── */
 .hover-lift {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .hover-lift:hover {
   transform: translateY(-2px);
@@ -659,8 +740,13 @@
 
 /* ──────────────── Pulse Glow (badges, live indicators) ──────────────── */
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 hsl(262 83% 58% / 0.4); }
-  50% { box-shadow: 0 0 0 8px hsl(262 83% 58% / 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(262 83% 58% / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px hsl(262 83% 58% / 0);
+  }
 }
 .glow-pulse {
   animation: glow-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -668,8 +754,12 @@
 
 /* ──────────────── Skeleton Shimmer ──────────────── */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 .skeleton-shimmer {
   background: linear-gradient(
@@ -684,8 +774,13 @@
 
 /* ──────────────── Floating Label ──────────────── */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 .float-animate {
   animation: float 3s ease-in-out infinite;

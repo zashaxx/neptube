@@ -43,8 +43,8 @@ const typeConfig = {
   },
   new_user: {
     icon: UserPlus,
-    color: "text-blue-600 bg-blue-50 border-blue-200",
-    badge: "bg-blue-100 text-blue-700",
+    color: "text-primary bg-primary/10 border-primary/30",
+    badge: "bg-primary/10 text-primary",
   },
 };
 
@@ -97,12 +97,12 @@ export default function AdminActivityPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Shield className="h-6 w-6 text-blue-600" />
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Shield className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Activity Log</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-foreground">Activity Log</h1>
+            <p className="text-sm text-muted-foreground">
               Recent platform events and moderation activity
             </p>
           </div>
@@ -120,15 +120,15 @@ export default function AdminActivityPage() {
               {severityCounts.warning} warnings
             </span>
           )}
-          <span className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+          <span className="px-2.5 py-1 text-xs font-medium bg-muted text-foreground rounded-full">
             {filtered?.length ?? 0} total
           </span>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 bg-white p-4 rounded-lg border shadow-sm">
-        <Filter className="h-4 w-4 text-gray-500" />
+      <div className="flex flex-wrap items-center gap-3 bg-card p-4 rounded-lg border shadow-sm">
+        <Filter className="h-4 w-4 text-muted-foreground" />
 
         {/* Type filter pills */}
         <div className="flex flex-wrap gap-1.5">
@@ -138,8 +138,8 @@ export default function AdminActivityPage() {
               onClick={() => setFilterType(ft.value)}
               className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                 filterType === ft.value
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-muted text-muted-foreground hover:bg-muted"
               }`}
             >
               {ft.label}
@@ -147,7 +147,7 @@ export default function AdminActivityPage() {
           ))}
         </div>
 
-        <div className="h-5 w-px bg-gray-300" />
+        <div className="h-5 w-px bg-muted" />
 
         {/* Time range pills */}
         <div className="flex gap-1.5">
@@ -157,8 +157,8 @@ export default function AdminActivityPage() {
               onClick={() => setDays(d.value)}
               className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                 days === d.value
-                  ? "bg-gray-900 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-card text-white shadow-sm"
+                  : "bg-muted text-muted-foreground hover:bg-muted"
               }`}
             >
               {d.label}
@@ -173,15 +173,15 @@ export default function AdminActivityPage() {
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="bg-white rounded-lg border p-4 animate-pulse"
+              className="bg-card rounded-lg border p-4 animate-pulse"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-200 rounded-full" />
+                <div className="w-8 h-8 bg-muted rounded-full" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-1/3" />
-                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  <div className="h-4 bg-muted rounded w-1/3" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
                 </div>
-                <div className="h-3 bg-gray-100 rounded w-20" />
+                <div className="h-3 bg-muted rounded w-20" />
               </div>
             </div>
           ))}
@@ -189,7 +189,7 @@ export default function AdminActivityPage() {
       ) : filtered && filtered.length > 0 ? (
         <div className="relative">
           {/* Timeline line */}
-          <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-gray-200" />
+          <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-muted" />
 
           <div className="space-y-3">
             {filtered.map((activity) => {
@@ -199,7 +199,7 @@ export default function AdminActivityPage() {
               return (
                 <div
                   key={activity.id}
-                  className={`relative flex items-start gap-4 p-4 rounded-lg border bg-white hover:shadow-sm transition-shadow ${
+                  className={`relative flex items-start gap-4 p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow ${
                     activity.severity === "danger"
                       ? "border-l-4 border-l-red-400"
                       : activity.severity === "warning"
@@ -217,7 +217,7 @@ export default function AdminActivityPage() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-medium text-gray-900 text-sm">
+                      <h3 className="font-medium text-foreground text-sm">
                         {activity.title}
                       </h3>
                       <span
@@ -226,13 +226,13 @@ export default function AdminActivityPage() {
                         {typeLabels[activity.type]}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
                       {activity.description}
                     </p>
                   </div>
 
                   {/* Timestamp */}
-                  <div className="flex-shrink-0 text-xs text-gray-400 whitespace-nowrap">
+                  <div className="flex-shrink-0 text-xs text-muted-foreground whitespace-nowrap">
                     {formatDistanceToNow(new Date(activity.timestamp), {
                       addSuffix: true,
                     })}
@@ -243,10 +243,10 @@ export default function AdminActivityPage() {
           </div>
         </div>
       ) : (
-        <div className="text-center py-16 bg-white rounded-lg border">
-          <AlertTriangle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <h3 className="font-medium text-gray-700">No activity found</h3>
-          <p className="text-sm text-gray-500 mt-1">
+        <div className="text-center py-16 bg-card rounded-lg border">
+          <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <h3 className="font-medium text-foreground">No activity found</h3>
+          <p className="text-sm text-muted-foreground mt-1">
             {filterType !== "all"
               ? "Try changing the filter or time range"
               : `No events in the last ${days} days`}

@@ -30,7 +30,7 @@ export default function AdminToxicCommentsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Toxic Comments</h1>
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-card rounded-lg shadow">
         <Table>
           <TableHeader>
             <TableRow>
@@ -45,13 +45,13 @@ export default function AdminToxicCommentsPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Loading toxic comments...
                 </TableCell>
               </TableRow>
             ) : comments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   No toxic comments found
                 </TableCell>
               </TableRow>
@@ -66,7 +66,7 @@ export default function AdminToxicCommentsPage() {
                       {c.toxicityScore != null ? (c.toxicityScore * 100).toFixed(1) : "-"}%
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-gray-500">{format(new Date(c.createdAt), "MMM d, yyyy")}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{format(new Date(c.createdAt), "MMM d, yyyy")}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button

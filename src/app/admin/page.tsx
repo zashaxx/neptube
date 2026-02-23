@@ -11,15 +11,15 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <h1 className="text-2xl font-bold gradient-text">Dashboard</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(9)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="animate-pulse glass-card border-border/50">
               <CardHeader className="pb-2">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-muted rounded w-24"></div>
               </CardHeader>
               <CardContent>
-                <div className="h-8 bg-gray-200 rounded w-16"></div>
+                <div className="h-8 bg-muted rounded w-16"></div>
               </CardContent>
             </Card>
           ))}
@@ -33,8 +33,8 @@ export default function AdminDashboard() {
       title: "Total Users",
       value: stats?.totalUsers ?? 0,
       icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
       href: "/admin/users",
     },
     {
@@ -106,16 +106,16 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">
+        <h1 className="text-2xl font-bold gradient-text">Dashboard</h1>
+        <p className="text-muted-foreground mt-1">
           Overview of your NepTube platform statistics
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {statCards.map((stat) => {
           const cardContent = (
-            <Card className={`relative transition-all duration-200 ${stat.href ? "hover:shadow-lg hover:scale-[1.02] cursor-pointer group" : ""}`}>
+            <Card className={`relative glass-card border-border/50 transition-all duration-200 ${stat.href ? "hover:shadow-lg hover:scale-[1.02] cursor-pointer group" : ""}`}>
               <CardHeader className="pb-2">
                 <div className={`text-2xl ${stat.color}`}>{<stat.icon />}</div>
                 <CardTitle className="mt-2 text-lg font-semibold">{stat.title}</CardTitle>
@@ -145,81 +145,81 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+        <Card className="glass-card border-border/50">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="text-foreground">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <a
+            <Link
               href="/admin/users"
-              className="block p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="block p-4 border border-border/50 rounded-lg hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Users className="h-5 w-5 text-primary" />
                 <div>
-                  <p className="font-medium">Manage Users</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-foreground">Manage Users</p>
+                  <p className="text-sm text-muted-foreground">
                     View, ban, or change user roles
                   </p>
                 </div>
               </div>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/videos"
-              className="block p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+              className="block p-4 border border-border/50 rounded-lg hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Video className="h-5 w-5 text-green-600" />
+                <Video className="h-5 w-5 text-primary" />
                 <div>
-                  <p className="font-medium">Moderate Videos</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-foreground">Moderate Videos</p>
+                  <p className="text-sm text-muted-foreground">
                     Approve, reject, or remove videos
                   </p>
                 </div>
               </div>
-            </a>
+            </Link>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glass-card border-border/50">
           <CardHeader>
-            <CardTitle>System Status</CardTitle>
+            <CardTitle className="text-foreground">System Status</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Database</span>
-                <span className="flex items-center gap-2 text-green-600">
-                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                <span className="text-muted-foreground">Database</span>
+                <span className="flex items-center gap-2 text-emerald-500">
+                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
                   Connected
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Authentication</span>
-                <span className="flex items-center gap-2 text-green-600">
-                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                <span className="text-muted-foreground">Authentication</span>
+                <span className="flex items-center gap-2 text-emerald-500">
+                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
                   Active
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">API</span>
-                <span className="flex items-center gap-2 text-green-600">
-                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                <span className="text-muted-foreground">API</span>
+                <span className="flex items-center gap-2 text-emerald-500">
+                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
                   Operational
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">AI/ML Engine</span>
-                <span className="flex items-center gap-2 text-green-600">
-                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                <span className="text-muted-foreground">AI/ML Engine</span>
+                <span className="flex items-center gap-2 text-emerald-500">
+                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
                   Active
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Content Moderation</span>
-                <span className="flex items-center gap-2 text-green-600">
-                  <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                <span className="text-muted-foreground">Content Moderation</span>
+                <span className="flex items-center gap-2 text-emerald-500">
+                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
                   Monitoring
                 </span>
               </div>

@@ -45,7 +45,7 @@ export default function AdminPendingVideosPage() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-card rounded-lg shadow border">
+      <div className="bg-card dark:bg-card rounded-lg shadow border">
         <Table>
           <TableHeader>
             <TableRow>

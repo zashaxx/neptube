@@ -121,20 +121,16 @@ export default function UploadVideoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-background border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/feed" className="text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <h1 className="text-lg font-semibold tracking-tight">
+    <div className="py-6 min-h-screen w-full">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Page title */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight gradient-text">
             {isShort ? "Upload Short" : "Upload Video"}
           </h1>
+          <p className="text-muted-foreground text-sm mt-1">Share your content with the world</p>
         </div>
-      </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Progress Steps */}
         <div className="flex items-center justify-center gap-4 mb-8">
           <div className={`flex items-center gap-2 ${step === "upload" ? "text-primary" : "text-muted-foreground"}`}>
@@ -444,7 +440,7 @@ export default function UploadVideoPage() {
             </CardContent>
           </Card>
         )}
-      </main>
+      </div>
     </div>
   );
 }

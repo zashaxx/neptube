@@ -58,10 +58,10 @@ export default function ChannelSettingsPage() {
 
   if (userLoading) {
     return (
-      <div className="py-6 dark:bg-gray-950 bg-white min-h-screen w-full">
+      <div className="py-6 min-h-screen w-full">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Skeleton className="h-10 w-64 mb-6" />
-          <Card className="dark:bg-gray-900 dark:border-gray-800">
+          <Card className="glass-card border-border/50">
             <CardHeader>
               <Skeleton className="h-6 w-48" />
               <Skeleton className="h-4 w-64 mt-2" />
@@ -80,11 +80,11 @@ export default function ChannelSettingsPage() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen dark:bg-gray-950">
-        <Card className="dark:bg-gray-900 dark:border-gray-800">
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="glass-card border-border/50">
           <CardHeader>
-            <CardTitle className="dark:text-white">Not authenticated</CardTitle>
-            <CardDescription className="dark:text-gray-400">
+            <CardTitle>Not authenticated</CardTitle>
+            <CardDescription>
               Please sign in to access your channel settings.
             </CardDescription>
           </CardHeader>
@@ -94,32 +94,32 @@ export default function ChannelSettingsPage() {
   }
 
   return (
-    <div className="py-6 dark:bg-gray-950 bg-white min-h-screen w-full">
+    <div className="py-6 min-h-screen w-full">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold dark:text-white mb-2">Your Channel</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold gradient-text mb-2">Your Channel</h1>
+          <p className="text-muted-foreground">
             Customize your channel profile and information
           </p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <Card className="dark:bg-gray-900 dark:border-gray-800">
+          <Card className="glass-card border-border/50">
             <CardHeader>
-              <CardTitle className="dark:text-white">Profile Information</CardTitle>
-              <CardDescription className="dark:text-gray-400">
+              <CardTitle>Profile Information</CardTitle>
+              <CardDescription>
                 Update your channel name, profile picture, and bio
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Profile Picture */}
               <div>
-                <Label className="dark:text-white mb-3 block">Profile Picture</Label>
-                <div className="flex items-center gap-6">
+                <Label className="mb-3 block">Profile Picture</Label>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={imageURL || user.imageURL} alt={name || user.name} />
-                    <AvatarFallback className="text-2xl">
+                    <AvatarFallback className="text-2xl bg-primary/10 text-primary">
                       {(name || user.name).charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -142,15 +142,15 @@ export default function ChannelSettingsPage() {
                         setIsUploadingImage(true);
                       }}
                       appearance={{
-                        button: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors ut-ready:bg-blue-600 ut-uploading:bg-blue-600 ut-uploading:cursor-not-allowed",
-                        allowedContent: "text-xs text-gray-500 dark:text-gray-400 mt-2",
+                        button: "bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors ut-ready:bg-primary ut-uploading:bg-primary ut-uploading:cursor-not-allowed",
+                        allowedContent: "text-xs text-muted-foreground mt-2",
                       }}
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    <p className="text-xs text-muted-foreground mt-2">
                       Recommended: Square image, at least 98x98 pixels
                     </p>
                     {isUploadingImage && (
-                      <p className="text-sm text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-2">
+                      <p className="text-sm text-primary mt-2 flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Uploading...
                       </p>
@@ -161,8 +161,8 @@ export default function ChannelSettingsPage() {
 
               {/* Channel Name */}
               <div className="space-y-2">
-                <Label htmlFor="name" className="dark:text-white">
-                  Channel Name <span className="text-red-500">*</span>
+                <Label htmlFor="name">
+                  Channel Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -172,16 +172,15 @@ export default function ChannelSettingsPage() {
                   placeholder="Enter your channel name"
                   maxLength={100}
                   required
-                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   {name.length}/100 characters
                 </p>
               </div>
 
               {/* Description/Bio */}
               <div className="space-y-2">
-                <Label htmlFor="description" className="dark:text-white">
+                <Label htmlFor="description">
                   Channel Description
                 </Label>
                 <Textarea
@@ -191,9 +190,9 @@ export default function ChannelSettingsPage() {
                   placeholder="Tell viewers about your channel"
                   maxLength={1000}
                   rows={4}
-                  className="dark:bg-gray-800 dark:border-gray-700 dark:text-white resize-none"
+                  className="resize-none"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   {description.length}/1000 characters
                 </p>
               </div>
@@ -201,22 +200,22 @@ export default function ChannelSettingsPage() {
               {/* Current Image URL (readonly, for reference) */}
               {imageURL && imageURL !== user.imageURL && (
                 <div className="space-y-2">
-                  <Label className="dark:text-white">New Image URL</Label>
+                  <Label>New Image URL</Label>
                   <Input
                     type="text"
                     value={imageURL}
                     readOnly
-                    className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 text-xs"
+                    className="text-xs text-muted-foreground"
                   />
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-3 pt-4 border-t dark:border-gray-800">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 border-t border-border">
                 <Button
                   type="submit"
                   disabled={updateProfile.isPending || isUploadingImage}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="gradient-btn"
                 >
                   {updateProfile.isPending ? (
                     <>
@@ -241,7 +240,6 @@ export default function ChannelSettingsPage() {
                     toast.info("Changes discarded");
                   }}
                   disabled={updateProfile.isPending}
-                  className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
                   Reset
                 </Button>
@@ -251,23 +249,23 @@ export default function ChannelSettingsPage() {
         </form>
 
         {/* Additional Info Card */}
-        <Card className="mt-6 dark:bg-gray-900 dark:border-gray-800">
+        <Card className="mt-6 glass-card border-border/50">
           <CardHeader>
-            <CardTitle className="dark:text-white flex items-center gap-2">
-              <User className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
               Account Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between items-center py-2 border-b dark:border-gray-800">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Channel ID</span>
-              <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded dark:text-gray-300">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 py-2 border-b border-border">
+              <span className="text-sm text-muted-foreground">Channel ID</span>
+              <code className="text-xs bg-muted px-2 py-1 rounded break-all">
                 {user.id}
               </code>
             </div>
-            <div className="flex justify-between items-center py-2 border-b dark:border-gray-800">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Member Since</span>
-              <span className="text-sm dark:text-gray-300">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 py-2 border-b border-border">
+              <span className="text-sm text-muted-foreground">Member Since</span>
+              <span className="text-sm">
                 {new Date(user.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
@@ -275,9 +273,9 @@ export default function ChannelSettingsPage() {
                 })}
               </span>
             </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Last Updated</span>
-              <span className="text-sm dark:text-gray-300">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 py-2">
+              <span className="text-sm text-muted-foreground">Last Updated</span>
+              <span className="text-sm">
                 {new Date(user.updatedAt).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
