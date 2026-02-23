@@ -17,6 +17,8 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
+type Gateway = "esewa" | "khalti" | "stripe" | "paypal";
+
 const TIER_ICONS: Record<string, React.ReactNode> = {
   free: <Star className="h-6 w-6" />,
   lite: <Zap className="h-6 w-6" />,
@@ -44,8 +46,6 @@ const TIER_BUTTON_COLORS: Record<string, string> = {
   premium: "bg-purple-600 hover:bg-purple-500 text-white",
   vip: "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold",
 };
-
-type Gateway = "esewa" | "khalti" | "stripe" | "paypal";
 
 export default function PremiumPlansPage() {
   const { data: plans, isLoading: plansLoading } = trpc.premium.getPlans.useQuery();
@@ -113,16 +113,15 @@ export default function PremiumPlansPage() {
         gateway: selectedGateway,
       });
 
-      // Step 2: Redirect to the payment gateway
+      // Step 2: Redirect to gateway
       if (selectedGateway === "esewa") {
         await redirectToEsewa(result.paymentId);
-        // Page will redirect — don't close dialog
-        return;
+        return; // Page will redirect
       }
 
-      // Other gateways (Khalti, Stripe, PayPal) — placeholder
+      // Khalti, Stripe, PayPal — not yet integrated
       alert(
-        `Payment initiated!\n\nTier: ${selectedTier}\nAmount: NPR ${result.amount / 100}\nGateway: ${result.gateway}\nPayment ID: ${result.paymentId}\n\nRedirect to ${result.gateway} not yet implemented.`
+        `${selectedGateway.charAt(0).toUpperCase() + selectedGateway.slice(1)} payment integration coming soon!\n\nYour subscription has been created. Please use eSewa to complete payment for now.`
       );
       setPaymentDialogOpen(false);
     } catch (error: unknown) {
@@ -380,7 +379,10 @@ export default function PremiumPlansPage() {
                   <div className="font-medium text-white">Khalti</div>
                   <div className="text-xs text-gray-400">Digital wallet & payment</div>
                 </Label>
-                <span className="text-purple-500 font-bold text-sm">Khalti</span>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-yellow-600/20 text-yellow-400 text-[10px] border-yellow-600/40">Soon</Badge>
+                  <span className="text-purple-500 font-bold text-sm">Khalti</span>
+                </div>
               </div>
 
               <div className="flex items-center space-x-3 p-3 rounded-lg border border-neutral-700 hover:border-blue-500 transition-colors cursor-pointer">
@@ -389,7 +391,10 @@ export default function PremiumPlansPage() {
                   <div className="font-medium text-white">Stripe</div>
                   <div className="text-xs text-gray-400">Credit/Debit card</div>
                 </Label>
-                <span className="text-blue-500 font-bold text-sm">Stripe</span>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-yellow-600/20 text-yellow-400 text-[10px] border-yellow-600/40">Soon</Badge>
+                  <span className="text-blue-500 font-bold text-sm">Stripe</span>
+                </div>
               </div>
 
               <div className="flex items-center space-x-3 p-3 rounded-lg border border-neutral-700 hover:border-sky-500 transition-colors cursor-pointer">
@@ -398,7 +403,10 @@ export default function PremiumPlansPage() {
                   <div className="font-medium text-white">PayPal</div>
                   <div className="text-xs text-gray-400">International payments</div>
                 </Label>
-                <span className="text-sky-500 font-bold text-sm">PayPal</span>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-yellow-600/20 text-yellow-400 text-[10px] border-yellow-600/40">Soon</Badge>
+                  <span className="text-sky-500 font-bold text-sm">PayPal</span>
+                </div>
               </div>
             </RadioGroup>
           </div>
