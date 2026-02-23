@@ -22,7 +22,7 @@ export const HomeLayout = ({ children }: HomeLayoutProps) => {
           <CommandPalette />
           <div className="flex min-h-screen pt-14">
             <HomeSidebar/>
-              <main className="flex-1 overflow-y-auto pb-16 sm:pb-0">
+              <main className="flex-1 overflow-x-hidden overflow-y-auto pb-16 sm:pb-0">
                   {children}
               </main>
             </div>

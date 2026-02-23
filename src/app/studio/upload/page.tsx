@@ -180,6 +180,14 @@ export default function UploadVideoPage() {
                 <p className="text-sm text-muted-foreground">
                   Upload a video file (max 512MB, recommended 3-5 minutes for demo)
                 </p>
+
+                {isShort && (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      <strong className="text-amber-600 dark:text-amber-400">Shorts tip:</strong> Upload in vertical format <strong className="text-foreground">1080×1920</strong> (9:16 ratio) for the best experience.
+                    </p>
+                  </div>
+                )}
                 
                 {/* Upload Button - Alternative */}
                 <div className="flex flex-col items-center gap-4">
@@ -286,6 +294,23 @@ export default function UploadVideoPage() {
                         onCheckedChange={setIsShort}
                       />
                     </div>
+
+                    {isShort && (
+                      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 space-y-2">
+                        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                          <Zap className="h-4 w-4" />
+                          <span className="text-sm font-medium">Shorts Format Recommendation</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          For the best viewing experience, upload your short in <strong className="text-foreground">vertical format (9:16)</strong> with a resolution of <strong className="text-foreground">1080×1920</strong> pixels. Videos not in this format will be letterboxed to fit the vertical player.
+                        </p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">📐 9:16 aspect ratio</span>
+                          <span className="flex items-center gap-1">📏 1080×1920px</span>
+                          <span className="flex items-center gap-1">⏱️ Under 60 seconds</span>
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <Label htmlFor="category">Category</Label>

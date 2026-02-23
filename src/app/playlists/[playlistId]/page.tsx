@@ -25,7 +25,10 @@ export default function PlaylistDetailPage() {
   );
 
   const removeVideo = trpc.playlists.removeVideo.useMutation({
-    onSuccess: () => utils.playlists.getById.invalidate({ id: playlistId }),
+    onSuccess: () => {
+      utils.playlists.getById.invalidate({ id: playlistId });
+      utils.playlists.getMyPlaylists.invalidate();
+    },
   });
 
   if (isLoading) {

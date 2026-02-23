@@ -102,6 +102,7 @@ export const videosRouter = createTRPCRouter({
           tags: videos.tags,
           isNsfw: videos.isNsfw,
           isShort: videos.isShort,
+          category: videos.category,
           user: {
             id: users.id,
             name: users.name,

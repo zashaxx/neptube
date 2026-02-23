@@ -8,7 +8,6 @@ import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import {
   Users,
-  Eye,
   PlayCircle,
   Edit3,
   Save,
@@ -18,7 +17,6 @@ import {
   Loader2,
   MessageSquare,
   Heart,
-  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -248,7 +246,7 @@ export default function ChannelPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6">
       {/* Banner */}
-      <div className="relative w-full h-44 overflow-hidden">
+      <div className="relative w-full h-44 overflow-hidden rounded-xl mt-2">
         {channel.bannerURL ? (
           <Image
             src={channel.bannerURL}
@@ -343,7 +341,7 @@ export default function ChannelPage() {
                 This channel has no videos yet.
               </p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-x-4 gap-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-6">
                 {channel.videos.map((video, i) => (
                   <Link
                     key={video.id}
@@ -370,18 +368,9 @@ export default function ChannelPage() {
                     <h3 className="text-[13px] font-medium line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                       {video.title}
                     </h3>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                      <span className="flex items-center gap-0.5">
-                        <Eye className="h-3 w-3" />
-                        {formatViewCount(video.viewCount)} views
-                      </span>
-                      <span>·</span>
-                      <span>
-                        {formatDistanceToNow(new Date(video.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </span>
-                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                      {formatViewCount(video.viewCount)} views · {formatDistanceToNow(new Date(video.createdAt), { addSuffix: true })}
+                    </p>
                   </Link>
                 ))}
               </div>

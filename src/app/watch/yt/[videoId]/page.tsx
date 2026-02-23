@@ -368,6 +368,7 @@ export default function YouTubeWatchPage() {
       setPlaylistOpen(false);
       setSelectedPlaylist("");
       toast.success("Added to playlist");
+      utils.playlists.getMyPlaylists.invalidate();
     },
     onError: () => toast.error("Failed to add to playlist"),
   });
