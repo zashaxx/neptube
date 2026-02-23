@@ -48,3 +48,4 @@ next-env.d.ts
 !README.md
 !PROJECT_DOCUMENTATION.md
 nul
+video-server/videos/

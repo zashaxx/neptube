@@ -1,0 +1,3 @@
+# Downloaded video files (large, don't commit)
+videos/
+!videos/.gitkeep

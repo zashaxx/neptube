@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { trpc } from "@/trpc/client";
+import { getVideoSourceUrl } from "@/lib/offline-video";
 
 export default function EmbedPage() {
   const params = useParams();
@@ -31,7 +32,7 @@ export default function EmbedPage() {
   return (
     <div className="w-full h-screen bg-black flex items-center justify-center">
       <video
-        src={video.videoURL}
+        src={getVideoSourceUrl(videoId, video.videoURL)}
         controls
         autoPlay
         className="w-full h-full object-contain"

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { trpc } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Check, Crown, Sparkles, Star, Zap, CreditCard } from "lucide-react";
+import { Loader2, Check, Crown, Sparkles, Star, Zap, CreditCard, CheckCircle2, XCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -58,22 +59,71 @@ export default function PremiumPlansPage() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Handle eSewa redirect results
+  const searchParams = useSearchParams();
+  const paymentStatus = searchParams.get("payment");
+  const paymentTier = searchParams.get("tier");
+  const paymentRef = searchParams.get("ref");
+  const paymentReason = searchParams.get("reason");
+
+  /**
+   * Redirect to eSewa payment page.
+   * Creates a hidden form with all the signed fields and auto-submits it.
+   */
+  const redirectToEsewa = useCallback(async (paymentId: string) => {
+    const res = await fetch("/api/payments/esewa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentId }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to initiate eSewa payment");
+    }
+
+    const { formData, paymentUrl } = await res.json();
+
+    // Create and submit a hidden form to redirect to eSewa
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = paymentUrl;
+    form.style.display = "none";
+
+    for (const [key, value] of Object.entries(formData)) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = String(value);
+      form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+  }, []);
+
   const handleSubscribe = async () => {
     if (!selectedTier || selectedTier === "free") return;
 
     setIsProcessing(true);
     try {
+      // Step 1: Create pending subscription + payment record
       const result = await subscribe.mutateAsync({
         tier: selectedTier as "lite" | "premium" | "vip",
         gateway: selectedGateway,
       });
 
-      // In production, redirect to the payment gateway
-      // For now, simulate payment flow
-      alert(
-        `Payment initiated!\n\nTier: ${selectedTier}\nAmount: NPR ${result.amount / 100}\nGateway: ${result.gateway}\nPayment ID: ${result.paymentId}\n\nIn production, you would be redirected to ${result.gateway} to complete payment.`
-      );
+      // Step 2: Redirect to the payment gateway
+      if (selectedGateway === "esewa") {
+        await redirectToEsewa(result.paymentId);
+        // Page will redirect — don't close dialog
+        return;
+      }
 
+      // Other gateways (Khalti, Stripe, PayPal) — placeholder
+      alert(
+        `Payment initiated!\n\nTier: ${selectedTier}\nAmount: NPR ${result.amount / 100}\nGateway: ${result.gateway}\nPayment ID: ${result.paymentId}\n\nRedirect to ${result.gateway} not yet implemented.`
+      );
       setPaymentDialogOpen(false);
     } catch (error: unknown) {
       alert(error instanceof Error ? error.message : "Failed to initiate subscription");
@@ -95,6 +145,36 @@ export default function PremiumPlansPage() {
   return (
     <div className="min-h-screen bg-neutral-900 py-12 px-4">
       <div className="max-w-6xl mx-auto">
+
+        {/* Payment Success Banner */}
+        {paymentStatus === "success" && (
+          <div className="mb-8 p-6 rounded-xl bg-green-900/40 border border-green-600 text-center">
+            <CheckCircle2 className="h-12 w-12 text-green-400 mx-auto mb-3" />
+            <h2 className="text-2xl font-bold text-green-300 mb-2">Payment Successful!</h2>
+            <p className="text-green-200">
+              Your <span className="font-bold capitalize">{paymentTier}</span> subscription is now active.
+              Enjoy all your premium features!
+            </p>
+            {paymentRef && (
+              <p className="text-xs text-green-400/60 mt-2">Reference: {paymentRef}</p>
+            )}
+          </div>
+        )}
+
+        {/* Payment Failed Banner */}
+        {paymentStatus === "failed" && (
+          <div className="mb-8 p-6 rounded-xl bg-red-900/40 border border-red-600 text-center">
+            <XCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
+            <h2 className="text-2xl font-bold text-red-300 mb-2">Payment Failed</h2>
+            <p className="text-red-200">
+              Your payment could not be processed. Please try again.
+            </p>
+            {paymentReason && (
+              <p className="text-xs text-red-400/60 mt-2">Reason: {paymentReason.replace(/_/g, " ")}</p>
+            )}
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">

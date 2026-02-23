@@ -8,7 +8,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "video:server": "bun run video-server/server.ts",
+    "video:sync": "bun run video-server/sync.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.2",

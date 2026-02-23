@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import Link from "next/link";
 import { X, Maximize2, Play } from "lucide-react";
+import { getVideoSourceUrl } from "@/lib/offline-video";
 
 interface MiniPlayerVideo {
   id: string;
@@ -138,7 +139,7 @@ export function MiniPlayerProvider({ children }: { children: React.ReactNode }) 
 
           <video
             ref={miniVideoRef}
-            src={miniVideo.videoURL}
+            src={getVideoSourceUrl(miniVideo.id, miniVideo.videoURL)}
             className="w-full aspect-video object-contain bg-black"
             poster={miniVideo.thumbnailURL || undefined}
             onClick={() => {

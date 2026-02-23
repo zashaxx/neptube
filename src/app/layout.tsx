@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { BannedCheck } from "@/components/banned-check";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
+import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -86,6 +87,7 @@ export default function RootLayout({
                     <main className="flex-1">{children}</main>
                   </div>
                   <Toaster richColors position="bottom-right" />
+                  <ServiceWorkerRegistrar />
                 </BannedCheck>
               </SidebarProvider>
             </TRPCProvider>

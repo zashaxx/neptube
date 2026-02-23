@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getVideoSourceUrl } from "@/lib/offline-video";
 
 function formatCount(count?: number | null): string {
   if (count == null) return "0";
@@ -87,7 +88,7 @@ function ShortCard({
       {video.videoURL ? (
         <video
           ref={videoRef}
-          src={video.videoURL}
+          src={getVideoSourceUrl(video.id, video.videoURL)}
           loop
           muted={muted}
           playsInline

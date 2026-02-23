@@ -52,6 +52,8 @@ import {
   ChevronRight,
   Captions,
   CaptionsOff,
+  ExternalLink,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,6 +80,8 @@ import { useAuth } from "@clerk/nextjs";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useMiniPlayer } from "@/components/mini-player";
 import { WhyRecommended } from "@/components/why-recommended";
+import { SaveOfflineButton } from "@/components/save-offline-button";
+import { getOfflineVideoURL, getVideoSourceUrl } from "@/lib/offline-video";
 import { toast } from "sonner";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -658,6 +662,7 @@ export default function VideoPage() {
   const [videoDuration, setVideoDuration] = useState(0);
   const [shareTimestamp, setShareTimestamp] = useState(false);
   const [captionsEnabled, setCaptionsEnabled] = useState(true);
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const { isSignedIn } = useAuth();
   const utils = trpc.useUtils();
   const { openMiniPlayer } = useMiniPlayer();
@@ -784,6 +789,40 @@ export default function VideoPage() {
   const addToHistory = trpc.history.addToHistory.useMutation();
   const updateProgress = trpc.history.updateProgress.useMutation();
   const incrementViews = trpc.videos.incrementViews.useMutation();
+
+  // ─── Resolve video source (offline → proxy → direct) ─────────────
+  useEffect(() => {
+    if (!video?.videoURL) {
+      setVideoSrc(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function resolveSource() {
+      // 1. Check if saved offline in IndexedDB
+      try {
+        const offlineUrl = await getOfflineVideoURL(videoId);
+        if (!cancelled && offlineUrl) {
+          setVideoSrc(offlineUrl);
+          return;
+        }
+      } catch {
+        // IndexedDB not available, continue
+      }
+
+      // 2. Use byte-range streaming proxy for smoother playback
+      if (!cancelled && video?.videoURL) {
+        setVideoSrc(getVideoSourceUrl(videoId, video.videoURL));
+      }
+    }
+
+    resolveSource();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [videoId, video?.videoURL]);
 
   // ─── Effects ──────────────────────────────────────────────────────
 
@@ -931,11 +970,10 @@ export default function VideoPage() {
 
   const handleDownload = useCallback(() => {
     if (!video?.videoURL) return;
+    const downloadUrl = `/api/video/download?url=${encodeURIComponent(video.videoURL)}&title=${encodeURIComponent(video.title || "video")}`;
     const a = document.createElement("a");
-    a.href = video.videoURL;
+    a.href = downloadUrl;
     a.download = `${video.title || "video"}.mp4`;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1086,7 +1124,7 @@ export default function VideoPage() {
             {video.videoURL ? (
               <video
                 ref={videoRef}
-                src={video.videoURL}
+                src={videoSrc || video.videoURL}
                 controls
                 autoPlay
                 className={`w-full object-contain bg-black relative z-10 ${
@@ -1557,6 +1595,59 @@ export default function VideoPage() {
                   <Download className="h-4 w-4" />
                   Download
                 </Button>
+              )}
+
+              {/* Play externally — copy stream URL for VLC / mpv / video server */}
+              {video.videoURL && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 rounded-lg"
+                  onClick={() => {
+                    const videoServerUrl = `http://localhost:4000/stream/${videoId}`;
+                    navigator.clipboard.writeText(videoServerUrl);
+                    toast.success(
+                      "Stream URL copied!\n\n" +
+                      "• VLC: Ctrl+N → paste → Play\n" +
+                      "• mpv: mpv " + videoServerUrl + "\n" +
+                      "• Or open http://localhost:4000 for the demo player",
+                      { duration: 6000 }
+                    );
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Play External
+                </Button>
+              )}
+
+              {/* Open in demo player */}
+              {video.videoURL && (
+                <a
+                  href={`http://localhost:4000?play=${videoId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex"
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 rounded-lg"
+                    title="Open in NepTube Demo Player (port 4000)"
+                  >
+                    <Link2 className="h-4 w-4" />
+                    Demo Player
+                  </Button>
+                </a>
+              )}
+
+              {/* Save Offline */}
+              {video.videoURL && (
+                <SaveOfflineButton
+                  videoId={videoId}
+                  videoUrl={video.videoURL}
+                  title={video.title}
+                  thumbnailURL={video.thumbnailURL}
+                />
               )}
 
               {/* Keyboard Shortcuts */}
