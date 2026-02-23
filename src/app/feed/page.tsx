@@ -10,8 +10,9 @@ import {
   Eye, Upload, Search, Loader2, Sparkles, TrendingUp, Play,
   ChevronLeft, ChevronRight, MoreVertical, EyeOff, Ban, Undo2,
   Flame, Clock, Zap, BookOpen, Gamepad2, Music, Trophy,
-  Star, Target, Layers,
+  Star, Target, Layers, ThumbsUp, Users, BarChart3,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,169 @@ import {
 import { useAuth } from "@clerk/nextjs";
 import { YouTubeVideoCard, YouTubeVideoCardSkeleton } from "@/components/youtube-video-card";
 import { toast } from "sonner";
+
+// ─── Community Feed Section ──────────────────────────────────────────
+function CommunityFeedSection() {
+  const { isSignedIn } = useAuth();
+  const utils = trpc.useUtils();
+  const { data: posts, isLoading } = trpc.community.getAll.useQuery({ limit: 6 });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+            <Users className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="text-lg font-bold">Community</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="glass-card rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <Skeleton className="h-9 w-9 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!posts || posts.length === 0) return null;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+            <Users className="h-4 w-4 text-white" />
+          </div>
+          <h2 className="text-lg font-bold">Community</h2>
+        </div>
+        <Link href="/community">
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary">
+            View all
+          </Button>
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {posts.map((post) => (
+          <CommunityPostMiniCard key={post.id} post={post} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CommunityPostMiniCard({ post }: { post: {
+  id: string;
+  type: string;
+  content: string;
+  imageURL: string | null;
+  likeCount: number;
+  commentCount: number;
+  createdAt: Date | string;
+  user: { id: string; name: string; imageURL: string };
+  pollOptions: { id: string; text: string; voteCount: number }[];
+} }) {
+  const { isSignedIn } = useAuth();
+  const utils = trpc.useUtils();
+
+  const { data: hasLiked } = trpc.community.hasLiked.useQuery(
+    { postId: post.id },
+    { enabled: !!isSignedIn }
+  );
+
+  const toggleLike = trpc.community.toggleLike.useMutation({
+    onSuccess: (data) => {
+      utils.community.getAll.invalidate();
+      utils.community.hasLiked.invalidate({ postId: post.id });
+      toast(data.liked ? "Liked!" : "Unliked");
+    },
+  });
+
+  const totalVotes = post.pollOptions.reduce((s, o) => s + o.voteCount, 0);
+
+  return (
+    <Link href="/community" className="block">
+      <div className="glass-card rounded-xl p-4 hover:border-primary/30 transition-all duration-300 h-full flex flex-col">
+        <div className="flex items-start gap-2.5">
+          <Avatar className="h-8 w-8 rounded-lg flex-shrink-0">
+            <AvatarImage src={post.user.imageURL} />
+            <AvatarFallback className="rounded-lg bg-primary/10 text-primary text-xs">
+              {post.user.name[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-xs truncate">{post.user.name}</span>
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs mt-2 line-clamp-3 text-muted-foreground leading-relaxed flex-1">
+          {post.content}
+        </p>
+
+        {post.imageURL && (
+          <div className="mt-2 rounded-lg overflow-hidden border border-border">
+            <Image src={post.imageURL} alt="" width={400} height={200} className="w-full object-cover h-32" />
+          </div>
+        )}
+
+        {post.type === "poll" && post.pollOptions.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {post.pollOptions.slice(0, 3).map((opt) => {
+              const pct = totalVotes > 0 ? Math.round((opt.voteCount / totalVotes) * 100) : 0;
+              return (
+                <div key={opt.id} className="relative overflow-hidden rounded-md border border-border/50 p-1.5 text-[11px]">
+                  <div className="absolute inset-0 bg-primary/10" style={{ width: `${pct}%` }} />
+                  <div className="relative flex items-center justify-between">
+                    <span className="truncate">{opt.text}</span>
+                    <span className="text-muted-foreground ml-1 flex-shrink-0">{pct}%</span>
+                  </div>
+                </div>
+              );
+            })}
+            {post.pollOptions.length > 3 && (
+              <p className="text-[10px] text-muted-foreground">+{post.pollOptions.length - 3} more options</p>
+            )}
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <BarChart3 className="h-3 w-3" /> {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
+            </p>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border/30">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!isSignedIn) { toast.error("Sign in to like"); return; }
+              toggleLike.mutate({ postId: post.id });
+            }}
+            disabled={toggleLike.isPending}
+            className={`flex items-center gap-1 text-[11px] transition-colors ${
+              hasLiked ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"
+            }`}
+          >
+            <ThumbsUp className={`h-3 w-3 ${hasLiked ? "fill-primary" : ""}`} />
+            {post.likeCount > 0 ? post.likeCount : "Like"}
+          </button>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 function formatViewCount(count: number): string {
@@ -863,6 +1027,11 @@ function FeedPage() {
             {/* ── Shorts Carousel ── */}
             {!searchQuery && shortsVideos.length > 0 && !focusMode && (
               <ShortsCarousel shorts={shortsVideos} />
+            )}
+
+            {/* ── Community Posts ── */}
+            {!searchQuery && !focusMode && (
+              <CommunityFeedSection />
             )}
 
             {/* ── Topic Worlds ── */}

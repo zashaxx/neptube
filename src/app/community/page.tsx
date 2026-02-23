@@ -11,6 +11,8 @@ import {
   BarChart3,
   Send,
   Users,
+  Trash2,
+  MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +26,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import Image from "next/image";
+import { toast } from "sonner";
 
 function formatCount(count: number): string {
   if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
@@ -45,6 +64,7 @@ function CreatePostForm() {
       setImageURL("");
       setPollOptions(["", ""]);
       setPostType("text");
+      utils.community.getAll.invalidate();
       utils.community.getFeed.invalidate();
     },
   });
@@ -204,6 +224,7 @@ function PollDisplay({
 
   const vote = trpc.community.vote.useMutation({
     onSuccess: () => {
+      utils.community.getAll.invalidate();
       utils.community.getFeed.invalidate();
     },
   });
@@ -256,81 +277,156 @@ function PostCard({
     likeCount: number;
     commentCount: number;
     createdAt: Date | string;
-    user: { id: string; name: string; imageURL: string };
+    user: { id: string; clerkId: string; name: string; imageURL: string };
     pollOptions: { id: string; text: string; voteCount: number }[];
   };
 }) {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId } = useAuth();
   const utils = trpc.useUtils();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Track like state
+  const { data: hasLiked } = trpc.community.hasLiked.useQuery(
+    { postId: post.id },
+    { enabled: !!isSignedIn }
+  );
 
   const toggleLike = trpc.community.toggleLike.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      utils.community.getAll.invalidate();
       utils.community.getFeed.invalidate();
+      utils.community.hasLiked.invalidate({ postId: post.id });
+      toast.success(data.liked ? "Liked!" : "Unliked");
     },
   });
 
+  const deletePost = trpc.community.delete.useMutation({
+    onSuccess: () => {
+      utils.community.getAll.invalidate();
+      utils.community.getFeed.invalidate();
+      toast.success("Post deleted");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to delete post");
+    },
+  });
+
+  // Check if current user owns this post
+  const isOwner = isSignedIn && userId === post.user.clerkId;
+
   return (
-    <div className="glass-card rounded-xl p-5">
-      <div className="flex items-start gap-3">
-        <Avatar className="h-10 w-10 rounded-lg">
-          <AvatarImage src={post.user.imageURL} />
-          <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
-            {post.user.name[0]?.toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm">{post.user.name}</span>
-            <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(post.createdAt), {
-                addSuffix: true,
-              })}
-            </span>
-          </div>
-
-          <p className="text-sm mt-2 whitespace-pre-wrap leading-relaxed">
-            {post.content}
-          </p>
-
-          {post.imageURL && (
-            <div className="mt-3 rounded-lg overflow-hidden border border-border">
-              <Image
-                src={post.imageURL}
-                alt="Post image"
-                width={600}
-                height={400}
-                className="w-full object-cover max-h-96"
-              />
+    <>
+      <div className="glass-card rounded-xl p-5">
+        <div className="flex items-start gap-3">
+          <Avatar className="h-10 w-10 rounded-lg">
+            <AvatarImage src={post.user.imageURL} />
+            <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+              {post.user.name[0]?.toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm">{post.user.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatDistanceToNow(new Date(post.createdAt), {
+                    addSuffix: true,
+                  })}
+                </span>
+              </div>
+              {isOwner && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors">
+                      <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuItem
+                      onClick={() => setShowDeleteDialog(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
-          )}
 
-          {post.type === "poll" && post.pollOptions.length > 0 && (
-            <PollDisplay options={post.pollOptions} postId={post.id} />
-          )}
+            <p className="text-sm mt-2 whitespace-pre-wrap leading-relaxed">
+              {post.content}
+            </p>
 
-          <div className="flex items-center gap-4 mt-3">
-            <button
-              onClick={() =>
-                isSignedIn && toggleLike.mutate({ postId: post.id })
-              }
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-            >
-              <ThumbsUp className="h-4 w-4" />
-              {post.likeCount > 0 ? formatCount(post.likeCount) : "Like"}
-            </button>
+            {post.imageURL && (
+              <div className="mt-3 rounded-lg overflow-hidden border border-border">
+                <Image
+                  src={post.imageURL}
+                  alt="Post image"
+                  width={600}
+                  height={400}
+                  className="w-full object-cover max-h-96"
+                />
+              </div>
+            )}
+
+            {post.type === "poll" && post.pollOptions.length > 0 && (
+              <PollDisplay options={post.pollOptions} postId={post.id} />
+            )}
+
+            <div className="flex items-center gap-4 mt-3">
+              <button
+                onClick={() => {
+                  if (!isSignedIn) {
+                    toast.error("Sign in to like posts");
+                    return;
+                  }
+                  toggleLike.mutate({ postId: post.id });
+                }}
+                disabled={toggleLike.isPending}
+                className={`flex items-center gap-1.5 text-xs transition-colors ${
+                  hasLiked
+                    ? "text-primary font-semibold"
+                    : "text-muted-foreground hover:text-primary"
+                }`}
+              >
+                <ThumbsUp className={`h-4 w-4 ${hasLiked ? "fill-primary" : ""}`} />
+                {post.likeCount > 0 ? formatCount(post.likeCount) : "Like"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The post{post.type === "poll" ? " and all its poll votes" : ""} will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletePost.mutate({ id: post.id })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletePost.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
 export default function CommunityPage() {
   const { isSignedIn } = useAuth();
 
-  const { data: posts, isLoading } = trpc.community.getFeed.useQuery(
-    { limit: 30 },
-    { enabled: !!isSignedIn }
+  const { data: posts, isLoading } = trpc.community.getAll.useQuery(
+    { limit: 30 }
   );
 
   return (
@@ -357,16 +453,6 @@ export default function CommunityPage() {
               </div>
             ))}
           </>
-        ) : !isSignedIn ? (
-          <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
-            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-              <Users className="h-10 w-10 text-primary/60" />
-            </div>
-            <h2 className="text-lg font-semibold mb-1">Sign in to view community</h2>
-            <p className="text-muted-foreground text-sm max-w-sm">
-              See posts from creators you&apos;re subscribed to.
-            </p>
-          </div>
         ) : posts && posts.length > 0 ? (
           posts.map((post) => <PostCard key={post.id} post={post} />)
         ) : (
@@ -376,7 +462,9 @@ export default function CommunityPage() {
             </div>
             <h2 className="text-lg font-semibold mb-1">No community posts yet</h2>
             <p className="text-muted-foreground text-sm max-w-sm">
-              Create a post above, or subscribe to channels to see their posts!
+              {isSignedIn
+                ? "Be the first to create a post!"
+                : "Sign in to create and interact with community posts."}
             </p>
           </div>
         )}

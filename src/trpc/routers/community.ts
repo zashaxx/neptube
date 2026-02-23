@@ -26,6 +26,7 @@ export const communityRouter = createTRPCRouter({
           createdAt: communityPosts.createdAt,
           user: {
             id: users.id,
+            clerkId: users.clerkId,
             name: users.name,
             imageURL: users.imageURL,
           },
@@ -60,21 +61,42 @@ export const communityRouter = createTRPCRouter({
       }));
     }),
 
-  // Get community feed (posts from subscribed channels)
+  // Get community feed (own posts + posts from subscribed channels)
   getFeed: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(50).default(20) }))
     .query(async ({ ctx, input }) => {
+      // Always include the current user's own posts
+      const ownPosts = await ctx.db
+        .select({
+          id: communityPosts.id,
+          type: communityPosts.type,
+          content: communityPosts.content,
+          imageURL: communityPosts.imageURL,
+          likeCount: communityPosts.likeCount,
+          commentCount: communityPosts.commentCount,
+          createdAt: communityPosts.createdAt,
+          user: {
+            id: users.id,
+            clerkId: users.clerkId,
+            name: users.name,
+            imageURL: users.imageURL,
+          },
+        })
+        .from(communityPosts)
+        .innerJoin(users, eq(communityPosts.userId, users.id))
+        .where(eq(communityPosts.userId, ctx.user.id))
+        .orderBy(desc(communityPosts.createdAt))
+        .limit(input.limit);
+
+      // Also get posts from subscribed channels
       const subs = await ctx.db
         .select({ channelId: subscriptions.channelId })
         .from(subscriptions)
         .where(eq(subscriptions.subscriberId, ctx.user.id));
 
-      if (subs.length === 0) return [];
+      const channelIds = subs.map(s => s.channelId).filter(id => id !== ctx.user.id);
 
-      const channelIds = subs.map(s => s.channelId);
-
-      // Get posts from all subscribed channels
-      const allPosts = [];
+      const subPosts = [];
       for (const channelId of channelIds) {
         const posts = await ctx.db
           .select({
@@ -87,6 +109,7 @@ export const communityRouter = createTRPCRouter({
             createdAt: communityPosts.createdAt,
             user: {
               id: users.id,
+              clerkId: users.clerkId,
               name: users.name,
               imageURL: users.imageURL,
             },
@@ -96,8 +119,16 @@ export const communityRouter = createTRPCRouter({
           .where(eq(communityPosts.userId, channelId))
           .orderBy(desc(communityPosts.createdAt))
           .limit(10);
-        allPosts.push(...posts);
+        subPosts.push(...posts);
       }
+
+      // Merge own posts + subscribed posts, deduplicate by id
+      const seenIds = new Set<string>();
+      const allPosts = [...ownPosts, ...subPosts].filter(p => {
+        if (seenIds.has(p.id)) return false;
+        seenIds.add(p.id);
+        return true;
+      });
 
       // Sort by date and limit
       allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -116,6 +147,49 @@ export const communityRouter = createTRPCRouter({
       }
 
       return limited.map(post => ({
+        ...post,
+        pollOptions: pollOptionsMap[post.id] || [],
+      }));
+    }),
+
+  // Get all community posts (public explore feed)
+  getAll: baseProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(30) }))
+    .query(async ({ ctx, input }) => {
+      const posts = await ctx.db
+        .select({
+          id: communityPosts.id,
+          type: communityPosts.type,
+          content: communityPosts.content,
+          imageURL: communityPosts.imageURL,
+          likeCount: communityPosts.likeCount,
+          commentCount: communityPosts.commentCount,
+          createdAt: communityPosts.createdAt,
+          user: {
+            id: users.id,
+            clerkId: users.clerkId,
+            name: users.name,
+            imageURL: users.imageURL,
+          },
+        })
+        .from(communityPosts)
+        .innerJoin(users, eq(communityPosts.userId, users.id))
+        .orderBy(desc(communityPosts.createdAt))
+        .limit(input.limit);
+
+      // Fetch poll options for poll-type posts
+      const pollPostIds = posts.filter(p => p.type === "poll").map(p => p.id);
+      const pollOptionsMap: Record<string, { id: string; text: string; voteCount: number }[]> = {};
+
+      for (const postId of pollPostIds) {
+        const options = await ctx.db
+          .select({ id: pollOptions.id, text: pollOptions.text, voteCount: pollOptions.voteCount })
+          .from(pollOptions)
+          .where(eq(pollOptions.postId, postId));
+        pollOptionsMap[postId] = options;
+      }
+
+      return posts.map(post => ({
         ...post,
         pollOptions: pollOptionsMap[post.id] || [],
       }));

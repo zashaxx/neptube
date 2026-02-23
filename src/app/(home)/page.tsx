@@ -1,9 +1,7 @@
 "use client"
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import TrendingFeed from "../feed/trending/page";
+import FeedPage from "../feed/page";
 
 export default function Home() {
-  return <TrendingFeed />;
+  return <FeedPage />;
 }
