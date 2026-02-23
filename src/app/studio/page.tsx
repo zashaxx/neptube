@@ -32,7 +32,6 @@ import {
   Lock,
   Link as LinkIcon,
   Sparkles,
-  Zap,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -70,7 +69,7 @@ export default function StudioPage() {
       case "rejected":
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       case "draft":
-        return <Badge className="bg-muted text-foreground">Draft</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -80,35 +79,38 @@ export default function StudioPage() {
   const totalLikes = videos?.reduce((sum, v) => sum + v.likeCount, 0) || 0;
 
   return (
-    <div className="py-6 min-h-screen w-full">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h1 className="text-2xl font-bold tracking-tight gradient-text">Creator Studio</h1>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Link href="/studio/ai-dashboard">
-              <Button variant="outline" className="gap-2 rounded-lg">
-                <Sparkles className="h-4 w-4" />
-                AI Dashboard
-              </Button>
-            </Link>
-            <Link href="/studio/upload?type=short">
-              <Button variant="outline" className="gap-2 rounded-lg">
-                <Zap className="h-4 w-4 text-yellow-500" />
-                Upload Short
-              </Button>
-            </Link>
-            <Link href="/studio/upload">
-              <Button className="gap-2 gradient-btn rounded-lg">
-                <Upload className="h-4 w-4" />
-                Upload Video
-              </Button>
-            </Link>
+      <div className="bg-background/60 backdrop-blur-xl border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Link href="/feed" className="text-muted-foreground hover:text-foreground transition-colors">
+                ← Back
+              </Link>
+              <h1 className="text-xl font-bold tracking-tight gradient-text">Creator Studio</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href="/studio/ai-dashboard">
+                <Button variant="outline" className="gap-2 rounded-lg">
+                  <Sparkles className="h-4 w-4" />
+                  AI Dashboard
+                </Button>
+              </Link>
+              <Link href="/studio/upload">
+                <Button className="gap-2 gradient-btn rounded-lg">
+                  <Upload className="h-4 w-4" />
+                  Upload Video
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="glass-card border-border/50">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -157,7 +159,7 @@ export default function StudioPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-gray-500">
                 Loading your videos...
               </div>
             ) : !videos || videos.length === 0 ? (
@@ -195,7 +197,7 @@ export default function StudioPage() {
                     <TableRow key={video.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="relative w-32 h-18 rounded overflow-hidden bg-muted flex-shrink-0">
+                          <div className="relative w-32 h-18 rounded overflow-hidden bg-gray-100 flex-shrink-0">
                             {video.thumbnailURL ? (
                               <Image
                                 src={video.thumbnailURL}

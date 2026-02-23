@@ -70,7 +70,7 @@ export default function AdminReportsPage() {
         );
       case "reviewed":
         return (
-          <Badge variant="outline" className="gap-1 text-primary border-primary/30">
+          <Badge variant="outline" className="gap-1 text-blue-600 border-blue-300">
             <AlertTriangle className="h-3 w-3" />
             Reviewed
           </Badge>
@@ -84,7 +84,7 @@ export default function AdminReportsPage() {
         );
       case "dismissed":
         return (
-          <Badge variant="outline" className="gap-1 text-muted-foreground border-border">
+          <Badge variant="outline" className="gap-1 text-gray-600 border-gray-300">
             <XCircle className="h-3 w-3" />
             Dismissed
           </Badge>
@@ -102,7 +102,7 @@ export default function AdminReportsPage() {
             <Flag className="h-6 w-6 text-red-500" />
             Content Reports
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-gray-500 text-sm mt-1">
             {pendingCount ? `${pendingCount} pending reports` : "No pending reports"}
           </p>
         </div>
@@ -120,7 +120,7 @@ export default function AdminReportsPage() {
         </Select>
       </div>
 
-      <div className="bg-card rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow">
         <Table>
           <TableHeader>
             <TableRow>
@@ -135,13 +135,13 @@ export default function AdminReportsPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                   Loading reports...
                 </TableCell>
               </TableRow>
             ) : !reports || reports.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                   No reports found
                 </TableCell>
               </TableRow>
@@ -156,11 +156,11 @@ export default function AdminReportsPage() {
                   <TableCell className="font-medium max-w-[200px] truncate">
                     {report.reason}
                   </TableCell>
-                  <TableCell className="max-w-[250px] truncate text-sm text-muted-foreground">
+                  <TableCell className="max-w-[250px] truncate text-sm text-gray-600">
                     {report.description || "—"}
                   </TableCell>
                   <TableCell>{statusBadge(report.status)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-sm text-gray-500">
                     {format(new Date(report.createdAt), "MMM d, yyyy")}
                   </TableCell>
                   <TableCell>
@@ -180,7 +180,7 @@ export default function AdminReportsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-muted-foreground h-7 text-xs"
+                          className="text-gray-600 h-7 text-xs"
                           onClick={() => {
                             setResolvingId(report.id);
                             setResolveAction("dismissed");
@@ -190,7 +190,7 @@ export default function AdminReportsPage() {
                         </Button>
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-gray-400">
                         {report.resolvedNote || "—"}
                       </span>
                     )}

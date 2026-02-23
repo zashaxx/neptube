@@ -94,7 +94,7 @@ export default function AdminVideosPage() {
       case "rejected":
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       case "draft":
-        return <Badge className="bg-muted text-foreground">Draft</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -103,16 +103,16 @@ export default function AdminVideosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Videos</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-3xl font-bold text-gray-900">Videos</h1>
+        <p className="text-gray-600 mt-1">
           Review and moderate video content
         </p>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 bg-card p-4 rounded-lg shadow-sm">
+      <div className="flex flex-wrap gap-4 bg-white p-4 rounded-lg shadow-sm">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search videos..."
             value={search}
@@ -138,7 +138,7 @@ export default function AdminVideosPage() {
       </div>
 
       {/* Videos Table */}
-      <div className="bg-card rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -160,7 +160,7 @@ export default function AdminVideosPage() {
               </TableRow>
             ) : data?.videos.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                   No videos found
                 </TableCell>
               </TableRow>
@@ -169,7 +169,7 @@ export default function AdminVideosPage() {
                 <TableRow key={video.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-24 h-14 bg-muted rounded overflow-hidden flex-shrink-0">
+                      <div className="w-24 h-14 bg-gray-200 rounded overflow-hidden flex-shrink-0">
                         {video.thumbnailURL ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -178,7 +178,7 @@ export default function AdminVideosPage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
                             No thumb
                           </div>
                         )}
@@ -187,7 +187,7 @@ export default function AdminVideosPage() {
                         <p className="font-medium truncate max-w-[200px]">
                           {video.title}
                         </p>
-                        <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                        <p className="text-sm text-gray-500 truncate max-w-[200px]">
                           {video.description || "No description"}
                         </p>
                       </div>
@@ -212,7 +212,7 @@ export default function AdminVideosPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <Eye className="h-4 w-4 text-muted-foreground" />
+                      <Eye className="h-4 w-4 text-gray-400" />
                       {video.viewCount.toLocaleString()}
                     </div>
                   </TableCell>
@@ -221,7 +221,7 @@ export default function AdminVideosPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Badge className="bg-primary/10 text-primary">{video.status}</Badge>
+                      <Badge className="bg-blue-100 text-blue-800">{video.status}</Badge>
                       {video.status === "pending" && (
                         <Button
                           size="sm"
@@ -280,7 +280,7 @@ export default function AdminVideosPage() {
         </Table>
 
         {data && (
-          <div className="px-4 py-3 border-t text-sm text-muted-foreground">
+          <div className="px-4 py-3 border-t text-sm text-gray-500">
             Showing {data.videos.length} of {data.total} videos
           </div>
         )}

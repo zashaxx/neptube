@@ -162,15 +162,15 @@ export default function EditVideoPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     );
   }
 
   if (!video) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <h1 className="text-2xl font-bold mb-4">Video not found</h1>
         <Link href="/studio">
           <Button>Back to Studio</Button>
@@ -180,14 +180,14 @@ export default function EditVideoPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-card border-b border-border">
+      <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
             <Link
               href="/studio"
-              className="text-muted-foreground hover:text-foreground flex items-center gap-1"
+              className="text-gray-500 hover:text-gray-700 flex items-center gap-1"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Studio
@@ -214,7 +214,7 @@ export default function EditVideoPage() {
                   maxLength={100}
                   required
                 />
-                <p className="text-xs text-muted-foreground">{title.length}/100</p>
+                <p className="text-xs text-gray-500">{title.length}/100</p>
               </div>
 
               {/* Description */}
@@ -228,7 +228,7 @@ export default function EditVideoPage() {
                   rows={5}
                   maxLength={5000}
                 />
-                <p className="text-xs text-muted-foreground">{description.length}/5000</p>
+                <p className="text-xs text-gray-500">{description.length}/5000</p>
               </div>
 
               {/* Category */}
@@ -310,7 +310,7 @@ export default function EditVideoPage() {
                 <CardContent>
                   {thumbnailUrl ? (
                     <div className="space-y-3">
-                      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
+                      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-100">
                         <Image
                           src={thumbnailUrl}
                           alt="Video thumbnail"
@@ -354,7 +354,7 @@ export default function EditVideoPage() {
                           <span className="w-full border-t" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-card px-2 text-muted-foreground">Or upload</span>
+                          <span className="bg-white px-2 text-gray-500">Or upload</span>
                         </div>
                       </div>
 
@@ -368,7 +368,7 @@ export default function EditVideoPage() {
                         onUploadError={(error: Error) => {
                           alert(`Thumbnail upload failed: ${error.message}`);
                         }}
-                        className="ut-label:text-sm border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors"
+                        className="ut-label:text-sm border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-500 transition-colors"
                       />
                     </div>
                   )}
@@ -394,8 +394,8 @@ export default function EditVideoPage() {
                       />
                     </div>
                   ) : (
-                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                      <p className="text-muted-foreground">No video</p>
+                    <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                      <p className="text-gray-500">No video</p>
                     </div>
                   )}
                 </CardContent>

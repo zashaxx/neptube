@@ -63,8 +63,8 @@ export function NotificationBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0 bg-background border-border shadow-xl">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background rounded-t-md">
+      <PopoverContent align="end" className="w-80 p-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold">Notifications</h3>
           {count > 0 && (
             <button

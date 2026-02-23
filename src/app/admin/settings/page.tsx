@@ -11,8 +11,8 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">
+        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-600 mt-1">
           Configure your NepTube platform settings
         </p>
       </div>
@@ -22,7 +22,7 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-muted-foreground" />
+              <Settings className="h-5 w-5 text-gray-600" />
               <CardTitle>General Settings</CardTitle>
             </div>
             <CardDescription>
@@ -49,7 +49,7 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-muted-foreground" />
+              <Shield className="h-5 w-5 text-gray-600" />
               <CardTitle>Content Moderation</CardTitle>
             </div>
             <CardDescription>
@@ -60,7 +60,7 @@ export default function AdminSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>Require Video Approval</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-500">
                   New videos require admin approval before publishing
                 </p>
               </div>
@@ -69,7 +69,7 @@ export default function AdminSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>Auto-moderate Comments</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-500">
                   Automatically filter inappropriate comments
                 </p>
               </div>
@@ -78,7 +78,7 @@ export default function AdminSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>Allow Anonymous Comments</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-500">
                   Allow users without accounts to comment
                 </p>
               </div>
@@ -91,7 +91,7 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-muted-foreground" />
+              <Bell className="h-5 w-5 text-gray-600" />
               <CardTitle>Notifications</CardTitle>
             </div>
             <CardDescription>
@@ -102,7 +102,7 @@ export default function AdminSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>New User Notifications</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-500">
                   Get notified when new users sign up
                 </p>
               </div>
@@ -111,7 +111,7 @@ export default function AdminSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>New Video Notifications</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-500">
                   Get notified when videos are uploaded
                 </p>
               </div>
@@ -120,7 +120,7 @@ export default function AdminSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>Report Notifications</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-gray-500">
                   Get notified when content is reported
                 </p>
               </div>
@@ -133,7 +133,7 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-muted-foreground" />
+              <Database className="h-5 w-5 text-gray-600" />
               <CardTitle>Database</CardTitle>
             </div>
             <CardDescription>
@@ -146,7 +146,7 @@ export default function AdminSettingsPage() {
                 <div className="h-3 w-3 bg-green-500 rounded-full"></div>
                 <span className="font-medium">Database Connected</span>
               </div>
-              <span className="text-sm text-muted-foreground">Neon PostgreSQL</span>
+              <span className="text-sm text-gray-600">Neon PostgreSQL</span>
             </div>
             <div className="flex gap-2">
               <Button variant="outline">Export Data</Button>

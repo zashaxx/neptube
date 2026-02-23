@@ -40,7 +40,7 @@ const TIER_ICONS: Record<string, React.ReactNode> = {
 };
 
 const TIER_COLORS: Record<string, string> = {
-  free: "text-muted-foreground",
+  free: "text-gray-400",
   lite: "text-blue-400",
   premium: "text-purple-400",
   vip: "text-yellow-400",
@@ -81,8 +81,8 @@ export default function SubscriptionManagementPage() {
 
   if (subLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen flex items-center justify-center bg-neutral-900">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     );
   }
@@ -92,21 +92,21 @@ export default function SubscriptionManagementPage() {
   const isExpired = mySubscription?.isExpired;
 
   return (
-    <div className="min-h-screen py-8 px-4">
+    <div className="min-h-screen bg-neutral-900 py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-foreground">Subscription Management</h1>
+        <h1 className="text-3xl font-bold text-white">Subscription Management</h1>
 
         {/* Current Plan Card */}
-        <Card className="bg-card border-border">
+        <Card className="bg-neutral-800 border-neutral-700">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={TIER_COLORS[tier]}>{TIER_ICONS[tier]}</div>
                 <div>
-                  <CardTitle className="text-foreground text-xl">
+                  <CardTitle className="text-white text-xl">
                     {tier.charAt(0).toUpperCase() + tier.slice(1)} Plan
                   </CardTitle>
-                  <CardDescription className="text-muted-foreground">
+                  <CardDescription className="text-gray-400">
                     {tier === "free"
                       ? "You're on the free plan"
                       : subscription
@@ -131,15 +131,15 @@ export default function SubscriptionManagementPage() {
           <CardContent>
             {/* Quick Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-muted/50 rounded-lg p-3">
-                <div className="text-xs text-muted-foreground">Max Quality</div>
-                <div className="text-lg font-bold text-foreground">
+              <div className="bg-neutral-700/50 rounded-lg p-3">
+                <div className="text-xs text-gray-400">Max Quality</div>
+                <div className="text-lg font-bold text-white">
                   {mySubscription?.tierConfig.maxQuality || "480p"}
                 </div>
               </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <div className="text-xs text-muted-foreground">Ads</div>
-                <div className="text-lg font-bold text-foreground">
+              <div className="bg-neutral-700/50 rounded-lg p-3">
+                <div className="text-xs text-gray-400">Ads</div>
+                <div className="text-lg font-bold text-white">
                   {mySubscription?.adConfig.showAds
                     ? mySubscription?.adConfig.reducedFrequency
                       ? "Reduced"
@@ -147,9 +147,9 @@ export default function SubscriptionManagementPage() {
                     : "None"}
                 </div>
               </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <div className="text-xs text-muted-foreground">Downloads</div>
-                <div className="text-lg font-bold text-foreground">
+              <div className="bg-neutral-700/50 rounded-lg p-3">
+                <div className="text-xs text-gray-400">Downloads</div>
+                <div className="text-lg font-bold text-white">
                   {mySubscription?.downloadQuota.maxPerMonth === -1
                     ? "Unlimited"
                     : mySubscription?.downloadQuota.maxPerMonth === 0
@@ -157,9 +157,9 @@ export default function SubscriptionManagementPage() {
                     : `${mySubscription?.downloadsThisMonth || 0}/${mySubscription?.downloadQuota.maxPerMonth}`}
                 </div>
               </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <div className="text-xs text-muted-foreground">Auto-Renew</div>
-                <div className="text-lg font-bold text-foreground">
+              <div className="bg-neutral-700/50 rounded-lg p-3">
+                <div className="text-xs text-gray-400">Auto-Renew</div>
+                <div className="text-lg font-bold text-white">
                   {subscription?.autoRenew ? "On" : "Off"}
                 </div>
               </div>
@@ -185,7 +185,7 @@ export default function SubscriptionManagementPage() {
 
                   <Button
                     variant="outline"
-                    className="border-border"
+                    className="border-neutral-600 text-gray-300 hover:bg-neutral-700"
                     onClick={handleToggleAutoRenew}
                     disabled={toggleAutoRenew.isPending}
                   >
@@ -203,18 +203,18 @@ export default function SubscriptionManagementPage() {
                         Cancel Subscription
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="bg-neutral-800 border-neutral-700">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>
+                        <AlertDialogTitle className="text-white">
                           Cancel Subscription?
                         </AlertDialogTitle>
-                        <AlertDialogDescription className="text-muted-foreground">
+                        <AlertDialogDescription className="text-gray-400">
                           Your subscription will remain active until the current billing period ends.
                           You won&apos;t be charged again.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="border-border">
+                        <AlertDialogCancel className="border-neutral-700 text-gray-300">
                           Keep Subscription
                         </AlertDialogCancel>
                         <AlertDialogAction
@@ -237,13 +237,13 @@ export default function SubscriptionManagementPage() {
 
         {/* Offline Downloads */}
         {tier !== "free" && (
-          <Card className="bg-card border-border">
+          <Card className="bg-neutral-800 border-neutral-700">
             <CardHeader>
-              <CardTitle className="text-foreground flex items-center gap-2">
+              <CardTitle className="text-white flex items-center gap-2">
                 <Download className="h-5 w-5" />
                 Offline Downloads
               </CardTitle>
-              <CardDescription className="text-muted-foreground">
+              <CardDescription className="text-gray-400">
                 {mySubscription?.downloadQuota.maxPerMonth === -1
                   ? "Unlimited downloads available"
                   : `${mySubscription?.downloadsThisMonth || 0} of ${mySubscription?.downloadQuota.maxPerMonth} used this month`}
@@ -251,15 +251,18 @@ export default function SubscriptionManagementPage() {
             </CardHeader>
             <CardContent>
               {downloadsLoading ? (
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto" />
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400 mx-auto" />
               ) : !downloads?.length ? (
-                <p className="text-muted-foreground text-center py-4">No offline downloads yet</p>
+                <p className="text-gray-500 text-center py-4">No offline downloads yet</p>
               ) : (
                 <div className="space-y-3">
                   {downloads.map((dl) => (
                     <div
                       key={dl.id}
-                      className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
+                      className="flex items-center gap-3 p-3 bg-neutral-700/50 rounded-lg"
+                    >
+                      <div
+                        className="w-24 h-14 bg-neutral-600 rounded bg-cover bg-center flex-shrink-0"
                         style={{
                           backgroundImage: dl.video.thumbnailURL
                             ? `url(${dl.video.thumbnailURL})`
@@ -267,8 +270,8 @@ export default function SubscriptionManagementPage() {
                         }}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground truncate">{dl.video.title}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm text-white truncate">{dl.video.title}</p>
+                        <p className="text-xs text-gray-400">
                           {dl.quality} · Expires{" "}
                           {format(new Date(dl.expiresAt), "PPP")}
                         </p>
@@ -293,18 +296,18 @@ export default function SubscriptionManagementPage() {
         )}
 
         {/* Payment History */}
-        <Card className="bg-card border-border">
+        <Card className="bg-neutral-800 border-neutral-700">
           <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
+            <CardTitle className="text-white flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
               Payment History
             </CardTitle>
           </CardHeader>
           <CardContent>
             {paymentsLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto" />
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400 mx-auto" />
             ) : !paymentHistory?.items.length ? (
-              <p className="text-muted-foreground text-center py-4">No payment history</p>
+              <p className="text-gray-500 text-center py-4">No payment history</p>
             ) : (
               <div className="space-y-2">
                 {paymentHistory.items.map((payment) => {
@@ -312,21 +315,21 @@ export default function SubscriptionManagementPage() {
                   return (
                     <div
                       key={payment.id}
-                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-neutral-700/50 rounded-lg"
                     >
                       <div className="flex items-center gap-3">
                         <div className={statusConfig.color}>{statusConfig.icon}</div>
                         <div>
-                          <p className="text-sm text-foreground">
+                          <p className="text-sm text-white">
                             {payment.tier.charAt(0).toUpperCase() + payment.tier.slice(1)} Plan
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-gray-400">
                             {format(new Date(payment.createdAt), "PPP")} via {payment.gateway}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="text-sm font-medium text-white">
                           NPR {(payment.amount / 100).toLocaleString()}
                         </p>
                         <p className={`text-xs ${statusConfig.color}`}>{statusConfig.label}</p>
@@ -345,7 +348,7 @@ export default function SubscriptionManagementPage() {
             <CardContent className="flex items-center gap-3 py-4">
               <AlertTriangle className="h-5 w-5 text-yellow-400 flex-shrink-0" />
               <div>
-                  <p className="text-sm text-yellow-300 font-medium">
+                <p className="text-sm text-yellow-300 font-medium">
                   Auto-renewal is disabled
                 </p>
                 <p className="text-xs text-yellow-400/80">

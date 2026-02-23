@@ -286,8 +286,8 @@ export default function ShortsPage() {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-56px)] w-full grid place-items-center">
-        <div className="w-[360px] h-[640px] sm:w-[400px] sm:h-[710px]">
+      <div className="flex items-center justify-center h-[calc(100vh-56px)]">
+        <div className="w-[380px] h-[680px]">
           <Skeleton className="w-full h-full rounded-2xl" />
         </div>
       </div>
@@ -315,57 +315,56 @@ export default function ShortsPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-56px)] w-full flex flex-col">
-      {/* Upload Short link */}
-      <div className="flex justify-center py-2">
-        <Link href="/studio/upload?type=short">
-          <Button variant="ghost" className="gap-2 text-sm">
-            <Plus className="h-4 w-4" />
-            Upload Short
-          </Button>
-        </Link>
-      </div>
+    <div className="flex items-center justify-center h-[calc(100vh-56px)] relative">
+      {/* Upload Short FAB */}
+      <Link
+        href="/studio/upload?type=short"
+        className="absolute top-4 right-4 z-40"
+      >
+        <Button className="gap-2 rounded-full shadow-lg">
+          <Plus className="h-4 w-4" />
+          Upload Short
+        </Button>
+      </Link>
 
-      {/* Centered shorts player */}
-      <div className="flex-1 grid place-items-center">
-        <div className="flex items-center gap-4">
-          {/* Shorts container */}
-          <div
-            ref={containerRef}
-            className="w-[360px] h-[640px] sm:w-[400px] sm:h-[710px] overflow-y-scroll snap-y snap-mandatory scrollbar-hide rounded-2xl"
-            style={{ scrollSnapType: "y mandatory" }}
+      {/* Shorts container + nav wrapper */}
+      <div className="relative flex items-center gap-4">
+        {/* Shorts container */}
+        <div
+          ref={containerRef}
+          className="w-[380px] h-[680px] overflow-y-scroll snap-y snap-mandatory scrollbar-hide rounded-2xl"
+          style={{ scrollSnapType: "y mandatory" }}
+        >
+          {allVideos.map((video, index) => (
+            <div key={video.id} className="w-full h-[680px] snap-center">
+              <ShortCard
+                video={video as unknown as ShortVideo}
+                isActive={index === currentIndex}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation arrows — outside the video card */}
+        <div className="flex flex-col gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full bg-background/80 backdrop-blur-sm"
+            onClick={goUp}
+            disabled={currentIndex === 0}
           >
-            {allVideos.map((video, index) => (
-              <div key={video.id} className="w-full h-full snap-center">
-                <ShortCard
-                  video={video as unknown as ShortVideo}
-                  isActive={index === currentIndex}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Navigation arrows */}
-          <div className="flex flex-col gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full bg-background/80 backdrop-blur-sm"
-              onClick={goUp}
-              disabled={currentIndex === 0}
-            >
-              <ChevronUp className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full bg-background/80 backdrop-blur-sm"
-              onClick={goDown}
-              disabled={currentIndex === allVideos.length - 1}
-            >
-              <ChevronDown className="h-5 w-5" />
-            </Button>
-          </div>
+            <ChevronUp className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full bg-background/80 backdrop-blur-sm"
+            onClick={goDown}
+            disabled={currentIndex === allVideos.length - 1}
+          >
+            <ChevronDown className="h-5 w-5" />
+          </Button>
         </div>
       </div>
     </div>

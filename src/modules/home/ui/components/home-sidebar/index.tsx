@@ -29,10 +29,10 @@ export const HomeSidebar = ()=>{
                                 <Link href="/admin">
                                     <div className="neptube-admin-card group">
                                         <div className="flex items-center gap-2.5">
-                                            <span className="neptube-icon-badge bg-gradient-to-br from-red-500 to-rose-600 flex-shrink-0">
+                                            <span className="neptube-icon-badge bg-gradient-to-br from-red-500 to-rose-600">
                                                 <ShieldCheck className="h-3.5 w-3.5 text-white" />
                                             </span>
-                                            <div className="group-data-[collapsible=icon]:hidden overflow-hidden">
+                                            <div>
                                                 <span className="text-[13px] font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">Admin Panel</span>
                                                 <p className="text-[10px] text-muted-foreground leading-tight">Manage users, videos & more</p>
                                             </div>
@@ -43,17 +43,17 @@ export const HomeSidebar = ()=>{
                         </>
                     )}
                 </div>
-                <div className="p-3 mt-auto group-data-[collapsible=icon]:p-1">
+                <div className="p-3 mt-auto">
                     <Link href="/premium">
-                        <div className="neptube-premium-card group-data-[collapsible=icon]:!p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-                            <div className="flex items-center gap-2 mb-1.5 group-data-[collapsible=icon]:mb-0">
-                                <Crown className="h-4 w-4 text-amber-400 flex-shrink-0" />
-                                <span className="text-xs font-bold tracking-wide text-white group-data-[collapsible=icon]:hidden">NepTube Pro</span>
+                        <div className="neptube-premium-card">
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <Crown className="h-4 w-4 text-amber-400" />
+                                <span className="text-xs font-bold tracking-wide text-white">NepTube Pro</span>
                             </div>
-                            <p className="text-[10px] text-white/60 leading-tight mb-2.5 group-data-[collapsible=icon]:hidden">
+                            <p className="text-[10px] text-white/60 leading-tight mb-2.5">
                                 Ad-free, offline, and 4K quality
                             </p>
-                            <Button size="sm" className="w-full h-7 text-[11px] font-bold rounded-md bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm transition-all group-data-[collapsible=icon]:hidden">
+                            <Button size="sm" className="w-full h-7 text-[11px] font-bold rounded-md bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm transition-all">
                                 Go Premium
                             </Button>
                         </div>
